@@ -140,3 +140,6 @@ vite.config.ts.timestamp-*
 
 # Test results
 test-results/
+
+# Agent temporary files (memory, PR drafts, summaries)
+.agent/

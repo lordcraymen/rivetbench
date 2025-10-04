@@ -2,6 +2,15 @@
 
 This document captures the high-level steps for extending RivetBench in an interface-first, BDD-oriented manner.
 
+## 🗂️ Temporary Files Management
+
+**All temporary files should go in `.agent/` directory** (gitignored):
+- `.agent/memory/` - Context tracking, agent state, session notes
+- `.agent/pr/` - PR descriptions, instructions, draft content  
+- `.agent/summaries/` - Implementation summaries, cleanup logs
+
+See `.agent/README.md` for full details.
+
 ## Core Principle
 
 **The goal of all changes is to create a Pull Request.** Every feature, refactor, or improvement should result in a PR that can be reviewed and merged into the main branch. Work should be organized into logical, reviewable units.
