@@ -1,5 +1,5 @@
 import { World, IWorldOptions, setWorldConstructor } from '@cucumber/cucumber';
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { expect } from './assertions.js';
 
 /**
@@ -8,7 +8,8 @@ import { expect } from './assertions.js';
  */
 export class RivetBenchWorld extends World {
   // REST server instance
-  public restServer?: FastifyInstance;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public restServer?: FastifyInstance<any, any, any, any>;
   public restServerUrl?: string;
 
   // Response data from API calls

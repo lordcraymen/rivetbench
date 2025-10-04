@@ -7,7 +7,8 @@ import type { FastifyInstance } from 'fastify';
 
 describe('REST Server Integration', () => {
   let server: Awaited<ReturnType<typeof createRestServer>>;
-  let fastify: FastifyInstance;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let fastify: FastifyInstance<any, any, any, any>;
   
   beforeAll(async () => {
     // Create a test registry with the echo endpoint
@@ -65,8 +66,11 @@ describe('REST Server Integration', () => {
       
       expect(response.statusCode).toBe(400);
       const body = response.json();
-      expect(body).toHaveProperty('error', 'Invalid input');
-      expect(body).toHaveProperty('details');
+      expect(body).toHaveProperty('error');
+      expect(body.error).toHaveProperty('name', 'ValidationError');
+      expect(body.error).toHaveProperty('code', 'VALIDATION_ERROR');
+      expect(body.error).toHaveProperty('message', 'Invalid endpoint input');
+      expect(body.error).toHaveProperty('details');
     });
     
     it('should return 404 for non-existent endpoint', async () => {
@@ -77,7 +81,12 @@ describe('REST Server Integration', () => {
       });
       
       expect(response.statusCode).toBe(404);
-      expect(response.json()).toEqual({ error: 'Endpoint not found' });
+      const body = response.json();
+      expect(body).toHaveProperty('error');
+      expect(body.error).toHaveProperty('name', 'EndpointNotFoundError');
+      expect(body.error).toHaveProperty('code', 'ENDPOINT_NOT_FOUND');
+      expect(body.error).toHaveProperty('message', "Endpoint 'nonexistent' not found");
+      expect(body.error.details).toHaveProperty('endpointName', 'nonexistent');
     });
   });
   

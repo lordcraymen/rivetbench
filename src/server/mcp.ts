@@ -1,6 +1,7 @@
 import { FastMCP } from 'fastmcp';
 import { EndpointRegistry } from '../core/registry.js';
 import { loadConfig } from '../config/index.js';
+import { ValidationError, toRivetBenchError } from '../core/errors.js';
 
 export interface McpServerOptions {
   registry: EndpointRegistry;
@@ -27,11 +28,18 @@ export const startMcpServer = async ({ registry }: McpServerOptions) => {
       execute: async (args, context) => {
         try {
           // Validate and parse input using Zod schema
-          const parsedInput = endpoint.input.parse(args);
+          const parsedInput = endpoint.input.safeParse(args);
+          
+          if (!parsedInput.success) {
+            throw new ValidationError('Invalid tool input', {
+              tool: endpoint.name,
+              issues: parsedInput.error.format()
+            });
+          }
           
           // Execute the endpoint handler
           const result = await endpoint.handler({
-            input: parsedInput,
+            input: parsedInput.data,
             config: {}
           });
           
@@ -48,20 +56,22 @@ export const startMcpServer = async ({ registry }: McpServerOptions) => {
             ]
           };
         } catch (error) {
-          // Log error details
+          // Convert to RivetBench error for consistent handling
+          const rivetError = toRivetBenchError(error);
+          
+          // Log error using FastMCP's logger (writes to stderr)
           context.log.error('Tool execution failed', {
             tool: endpoint.name,
-            error: error instanceof Error ? error.message : String(error)
+            errorCode: rivetError.code,
+            errorMessage: rivetError.message
           } as Record<string, string>);
           
-          // Return error as text content
+          // Return structured error response
           return {
             content: [
               {
                 type: 'text' as const,
-                text: JSON.stringify({
-                  error: error instanceof Error ? error.message : String(error)
-                }, null, 2)
+                text: JSON.stringify(rivetError.toJSON(), null, 2)
               }
             ],
             isError: true

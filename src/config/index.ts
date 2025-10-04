@@ -12,6 +12,11 @@ export interface ServerConfig {
     version: string;
     description?: string;
   };
+  logging: {
+    level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+    pretty: boolean;
+  };
+  environment: 'development' | 'production' | 'test';
 }
 
 export const loadConfig = (): ServerConfig => {
@@ -19,6 +24,9 @@ export const loadConfig = (): ServerConfig => {
   const mcpPort = process.env.RIVETBENCH_MCP_PORT 
     ? Number.parseInt(process.env.RIVETBENCH_MCP_PORT, 10)
     : undefined;
+  
+  const environment = (process.env.NODE_ENV ?? 'development') as 'development' | 'production' | 'test';
+  const logLevel = (process.env.LOG_LEVEL ?? 'info') as 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
   return {
     rest: {
@@ -33,6 +41,11 @@ export const loadConfig = (): ServerConfig => {
       name: 'RivetBench',
       version: '0.1.0',
       description: 'Dual exposed RPC endpoints for REST and MCP.'
-    }
+    },
+    logging: {
+      level: logLevel,
+      pretty: environment === 'development'
+    },
+    environment
   };
 };
