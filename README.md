@@ -1,6 +1,3 @@
-# rivetbench
-A lightweight Node.js framework for dual-exposed REST + MCP tools — one definition, two protocols.
-
 # RivetBench
 
 **RivetBench** is a lightweight TypeScript framework for building **dual‑exposed endpoints** that work over both **REST** and **MCP (Model Context Protocol)**, with **OpenAPI 3** documentation generated automatically.
