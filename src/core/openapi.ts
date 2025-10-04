@@ -1,4 +1,5 @@
 import { OpenAPIV3 } from 'openapi-types';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { AnyEndpointDefinition } from './endpoint.js';
 
 export interface OpenApiGeneratorOptions {
@@ -7,10 +8,18 @@ export interface OpenApiGeneratorOptions {
   description?: string;
 }
 
-const placeholderSchema = (): OpenAPIV3.SchemaObject => ({
-  type: 'object',
-  additionalProperties: true
-});
+const zodSchemaToOpenApi = (zodSchema: AnyEndpointDefinition['input'] | AnyEndpointDefinition['output']): OpenAPIV3.SchemaObject => {
+  const jsonSchema = zodToJsonSchema(zodSchema, { 
+    target: 'openApi3',
+    $refStrategy: 'none'
+  });
+  
+  // Remove $schema property as it's not needed in OpenAPI
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { $schema, ...schemaWithoutDollar } = jsonSchema as { $schema?: string; [key: string]: unknown };
+  
+  return schemaWithoutDollar as OpenAPIV3.SchemaObject;
+};
 
 const buildRpcPathItem = (endpoint: AnyEndpointDefinition): OpenAPIV3.PathItemObject => ({
   post: {
@@ -21,7 +30,7 @@ const buildRpcPathItem = (endpoint: AnyEndpointDefinition): OpenAPIV3.PathItemOb
       required: true,
       content: {
         'application/json': {
-          schema: placeholderSchema()
+          schema: zodSchemaToOpenApi(endpoint.input)
         }
       }
     },
@@ -30,7 +39,36 @@ const buildRpcPathItem = (endpoint: AnyEndpointDefinition): OpenAPIV3.PathItemOb
         description: 'Successful response',
         content: {
           'application/json': {
-            schema: placeholderSchema()
+            schema: zodSchemaToOpenApi(endpoint.output)
+          }
+        }
+      },
+      '400': {
+        description: 'Validation error',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                error: { type: 'string' },
+                details: { type: 'object' }
+              },
+              required: ['error']
+            }
+          }
+        }
+      },
+      '404': {
+        description: 'Endpoint not found',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                error: { type: 'string' }
+              },
+              required: ['error']
+            }
           }
         }
       }

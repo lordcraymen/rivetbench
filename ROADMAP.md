@@ -101,13 +101,13 @@ import { Given, When, Then } from '@cucumber/cucumber';
 
 ---
 
-### 3. Zod-to-OpenAPI Schema Conversion (Priority: HIGH)
+### 3. Zod-to-OpenAPI Schema Conversion (Priority: HIGH) ✅
 **Why**: OpenAPI docs currently show placeholder schemas instead of actual Zod schemas
 
 **Tasks**:
-- [ ] Install `zod-to-json-schema` or similar library
-- [ ] Update `src/core/openapi.ts` to convert Zod schemas to JSON Schema
-- [ ] Ensure proper OpenAPI 3.0.3 compliance
+- [x] Install `zod-to-json-schema` or similar library
+- [x] Update `src/core/openapi.ts` to convert Zod schemas to JSON Schema
+- [x] Ensure proper OpenAPI 3.0.3 compliance
 
 **Implementation**:
 ```typescript
