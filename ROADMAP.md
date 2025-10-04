@@ -1,218 +1,169 @@
 # RivetBench Development Roadmap
 
-This document outlines the next steps for implementing missing features and improving the RivetBench framework.
+This document outlines the next steps for implementing features and improvements to the RivetBench framework.
 
-## ✅ Completed
+## Current Status
 
-### Core Framework (Initial Release)
-- [x] Endpoint definition system with Zod schemas
-- [x] Endpoint registry (in-memory)
-- [x] OpenAPI document generation
-- [x] Echo endpoint implementation
-- [x] Zod-to-OpenAPI schema conversion
-- [x] REST server with Fastify
-- [x] Swagger UI integration at `/docs`
-- [x] MCP server with stdio and httpStream transports
-- [x] Comprehensive unit tests (27 tests passing)
+**Version**: 0.1.0 - MCP Implementation Complete  
+**Date**: October 2025
 
-### DevOps & Quality Assurance
-- [x] Pre-commit hooks with Husky and lint-staged
-- [x] GitHub Actions CI/CD pipeline
-- [x] Branch protection documentation
-- [x] Pull request template
-- [x] Contributing guidelines
-- [x] CODEOWNERS file
+### What's Working
 
-### What was completed:
-1. **Core Framework**: Full dual-exposure (REST + MCP) with automatic schema generation
-2. **REST Server**: Complete with health check, RPC endpoints, validation, Swagger UI
-3. **MCP Server**: Full implementation with FastMCP, supports stdio and TCP transports
-4. **DevOps**: Husky + lint-staged, CI pipeline (Node 20.x and 22.x), documentation
+✅ **Core Framework**: Write-once endpoints with Zod schemas  
+✅ **REST Server**: Full REST API with Swagger UI at `/docs`  
+✅ **MCP Server**: Dual transport (stdio + TCP) MCP implementation  
+✅ **Schema Generation**: Automatic OpenAPI + MCP JSON Schema  
+✅ **Testing**: 27 unit tests passing  
+✅ **CI/CD**: GitHub Actions with Node 20.x and 22.x  
+✅ **Quality**: Pre-commit hooks, linting, type checking  
 
 ---
 
-## 🔴 Critical - Must Implement Next
+## Next: Version 0.2.0 - Testing & Quality
 
 ### 1. Cucumber Step Definitions (Priority: HIGH)
-**Why**: BDD tests are defined but have no step implementations
-
-**Tasks**:
-- [ ] Implement step definitions for `echo.feature`
-- [ ] Implement step definitions for `health.feature`
-- [ ] Configure Cucumber properly in `cucumber.js` or similar config
-
-**Files to create**:
-```typescript
-// test/steps/echo.steps.ts
-import { Given, When, Then } from '@cucumber/cucumber';
-import { expect } from 'vitest';
-
-// Implementation of step definitions
-// - Setup test context
-// - Make HTTP requests to REST server
-// - Assert responses
-```
-
-```typescript
-// test/steps/health.steps.ts
-import { Given, When, Then } from '@cucumber/cucumber';
-// Implementation for health check tests
-```
-
+**Status**: 🔴 Not Started  
 **Branch**: `feature/implement-cucumber-steps`
 
----
+BDD tests are defined but need step implementations:
+- [ ] Implement step definitions for `echo.feature`
+- [ ] Implement step definitions for `health.feature`
+- [ ] Configure Cucumber execution in test suite
+- [ ] Document BDD testing approach
 
-## 🟡 Important - Should Implement Soon
-
-### 2. Error Handling & Logging (Priority: MEDIUM)
-**Why**: Production apps need structured error handling and logging
-
-**Tasks**:
-- [ ] Create error classes for different error types (ValidationError, NotFoundError, etc.)
-- [ ] Add structured logging (consider Pino, which works well with Fastify)
-- [ ] Implement error middleware/handlers
-- [ ] Add request ID tracking through the pipeline
-
-**Branch**: `feature/error-handling-logging`
-
----
-
-### 3. Integration Tests (Priority: MEDIUM)
-**Why**: Unit tests are good, but we need end-to-end tests
-
-**Tasks**:
-- [ ] Create integration tests that start actual servers
-- [ ] Test REST endpoints with real HTTP requests
-- [ ] Test MCP server with real MCP protocol
-- [ ] Add to CI pipeline
-
+### 2. Integration Tests (Priority: HIGH)
+**Status**: 🔴 Not Started  
 **Branch**: `feature/integration-tests`
 
+End-to-end testing with real servers:
+- [ ] REST server integration tests with real HTTP requests
+- [ ] MCP server integration tests with real protocol
+- [ ] Cross-protocol consistency tests
+- [ ] Add integration tests to CI pipeline
+
+### 3. Error Handling & Logging (Priority: MEDIUM)
+**Status**: 🔴 Not Started  
+**Branch**: `feature/error-handling-logging`
+
+Production-grade error handling:
+- [ ] Custom error classes (ValidationError, NotFoundError, etc.)
+- [ ] Structured logging with Pino
+- [ ] Error middleware for consistent responses
+- [ ] Request ID tracking through pipeline
+
 ---
 
-### 8. Input/Output Middleware (Priority: LOW-MEDIUM)
-**Why**: Endpoints may need pre/post processing (auth, logging, transformation)
+## Future: Version 0.3.0 - Production Ready
 
-**Tasks**:
-- [ ] Design middleware system for endpoints
-- [ ] Allow middleware to intercept input/output
-- [ ] Support async middleware chains
-- [ ] Add examples (auth, rate limiting, caching)
-
+### Middleware System
+**Status**: 🔴 Not Started  
 **Branch**: `feature/endpoint-middleware`
 
----
+Pre/post processing for endpoints:
+- [ ] Design middleware architecture
+- [ ] Async middleware chain support
+- [ ] Built-in middleware (auth, logging, rate limiting)
+- [ ] Documentation and examples
 
-## 🟢 Nice to Have - Future Enhancements
-
-### 9. Performance & Production Readiness
-- [ ] Add request/response compression
-- [ ] Implement rate limiting
-- [ ] Add metrics and monitoring (Prometheus)
-- [ ] Add health check with dependency status
-- [ ] Implement graceful shutdown
-- [ ] Add Docker support
-
+### Performance & Monitoring
+**Status**: 🔴 Not Started  
 **Branch**: `feature/production-readiness`
 
----
-
-### 10. Developer Experience
-- [ ] Add CLI tool for scaffolding endpoints
-- [ ] Create VSCode extension or snippets
-- [ ] Add hot reload for development
-- [ ] Improve error messages
-- [ ] Add request/response examples in OpenAPI
-
-**Branch**: `feature/developer-experience`
+Production-ready features:
+- [ ] Request/response compression
+- [ ] Rate limiting
+- [ ] Metrics and monitoring (Prometheus)
+- [ ] Enhanced health checks
+- [ ] Graceful shutdown
+- [ ] Docker support
 
 ---
 
-### 11. Advanced Features
-- [ ] WebSocket support for real-time endpoints
+## Future: Version 0.4.0+ - Extensions
+
+### Developer Experience
+**Status**: 💭 Planned
+
+- [ ] CLI tool for scaffolding endpoints
+- [ ] Hot reload for development
+- [ ] VSCode snippets/extension
+- [ ] Better error messages
+- [ ] OpenAPI example generation
+
+### Advanced Features
+**Status**: 💭 Planned
+
+- [ ] WebSocket support
 - [ ] GraphQL endpoint generation
 - [ ] Authentication/Authorization framework
 - [ ] Database integration helpers
 - [ ] File upload handling
 - [ ] Streaming responses
 
-**Branch**: Various feature branches
+### Documentation & Community
+**Status**: 💭 Planned
+
+- [ ] Architecture documentation with diagrams
+- [ ] Tutorial series
+- [ ] Example applications
+- [ ] Video tutorials
+- [ ] Community templates
 
 ---
 
-### 12. Documentation
-- [ ] Add architecture documentation (diagrams)
-- [ ] Create tutorial series
-- [ ] Add API reference documentation
-- [ ] Record video tutorials
-- [ ] Create example applications
+## Implementation Principles
 
-**Branch**: `docs/comprehensive-documentation`
+When implementing features, follow this process:
 
----
+1. **Interface First**: Define the interface and types before implementation
+2. **BDD Approach**: Write feature files to describe behavior
+3. **Type Safety**: Ensure full TypeScript coverage
+4. **Test Coverage**: Unit + integration tests for all features
+5. **Documentation**: Update docs before merging
+6. **CI Verification**: All checks must pass before merge
 
-## Implementation Strategy
-
-### ✅ Phase 1: Core Functionality - COMPLETE
-1. ✅ Implement echo endpoint
-2. ✅ Implement Zod-to-OpenAPI conversion
-3. ✅ Build REST server with Swagger UI
-4. ✅ Implement MCP server
-5. ✅ Add comprehensive unit tests (27 tests)
-
-**Status**: Core dual-exposure framework is fully functional!
-
-### Phase 2: Testing & Quality (Current)
-1. Add Cucumber step definitions for BDD tests
-2. Add integration tests for REST and MCP
-3. Improve error handling and logging
-4. Add request ID tracking
-
-### Phase 3: Production Ready (Next)
-1. Middleware system
-2. Performance optimizations
-3. Rate limiting and security
-4. Monitoring and metrics
-
-### Phase 4: Polish & Extensions (Ongoing)
-1. Advanced features as needed
-2. Community feedback integration
-3. Performance monitoring
-4. Ecosystem expansion
+See `agent.md` for detailed workflow guidance.
 
 ---
 
-## Branch Protection Reminder
+## Version History
 
-After this commit:
-1. **Set up branch protection** following `.github/BRANCH_PROTECTION.md`
-2. **Never commit directly to main** again
-3. **Always create feature branches** for new work
-4. **Open PRs** and wait for CI before merging
-5. **Get code reviews** before merging
+### Version 0.1.0 (October 2025) - MCP Implementation
+**Highlights**: Complete dual-exposure framework (REST + MCP)
+
+**Added**:
+- Core endpoint system with Zod schemas
+- REST server with Fastify and Swagger UI
+- MCP server with dual transport (stdio + TCP)
+- OpenAPI 3 generation
+- Comprehensive test suite (27 tests)
+- CI/CD pipeline with GitHub Actions
+- Pre-commit hooks and quality checks
+
+**Documentation**:
+- Complete MCP implementation guide
+- Contributing guidelines
+- Branch protection setup
+- Development workflow
 
 ---
 
-## Success Criteria
+## Contributing
 
-Each feature should have:
-- ✅ Clear interface definition
-- ✅ Type-safe implementation
-- ✅ Unit tests (Vitest)
-- ✅ BDD tests (Cucumber) where applicable
-- ✅ Updated documentation
-- ✅ Passing CI pipeline
-- ✅ Code review approval
+See `CONTRIBUTING.md` for:
+- Development setup
+- Branch naming conventions
+- Commit message format
+- Pull request process
+- Code review guidelines
 
 ---
 
 ## Questions?
 
-Refer to:
-- `CONTRIBUTING.md` for development workflow
-- `agent.md` for BDD/interface-first approach
-- `.github/BRANCH_PROTECTION.md` for branch protection setup
-- `README.md` for project overview
+- **Getting Started**: See `README.md`
+- **Development Workflow**: See `CONTRIBUTING.md`
+- **BDD Approach**: See `agent.md`
+- **MCP Details**: See `docs/MCP_GUIDE.md`
 
 Happy coding! 🚀
