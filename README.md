@@ -108,7 +108,9 @@ The MCP server exposes all registered endpoints as MCP tools with automatic sche
 
 ## Documentation
 
+- **[Development Workflow](WORKFLOW.md)** - Daily workflow, branch management, and best practices
 - **[MCP Implementation Guide](docs/MCP_GUIDE.md)** - Complete guide to MCP server usage, configuration, and integration
+- **[BDD Testing Guide](docs/BDD_TESTING.md)** - Cucumber/BDD testing documentation and examples
 - **[Contributing](CONTRIBUTING.md)** - Development workflow, branch strategy, and contribution guidelines
 - **[Roadmap](ROADMAP.md)** - Feature plans and development priorities
 
