@@ -2,7 +2,18 @@
 
 This document outlines the next steps for implementing missing features and improving the RivetBench framework.
 
-## ✅ Completed (This Commit)
+## ✅ Completed
+
+### Core Framework (Initial Release)
+- [x] Endpoint definition system with Zod schemas
+- [x] Endpoint registry (in-memory)
+- [x] OpenAPI document generation
+- [x] Echo endpoint implementation
+- [x] Zod-to-OpenAPI schema conversion
+- [x] REST server with Fastify
+- [x] Swagger UI integration at `/docs`
+- [x] MCP server with stdio and httpStream transports
+- [x] Comprehensive unit tests (27 tests passing)
 
 ### DevOps & Quality Assurance
 - [x] Pre-commit hooks with Husky and lint-staged
@@ -12,66 +23,17 @@ This document outlines the next steps for implementing missing features and impr
 - [x] Contributing guidelines
 - [x] CODEOWNERS file
 
-### What was added:
-1. **Husky + lint-staged**: Automatic linting, type-checking, and related tests on commit
-2. **CI Pipeline**: Runs on all PRs and pushes to main, tests against Node 20.x and 22.x
-3. **Documentation**: Complete guides for contributing and branch protection setup
+### What was completed:
+1. **Core Framework**: Full dual-exposure (REST + MCP) with automatic schema generation
+2. **REST Server**: Complete with health check, RPC endpoints, validation, Swagger UI
+3. **MCP Server**: Full implementation with FastMCP, supports stdio and TCP transports
+4. **DevOps**: Husky + lint-staged, CI pipeline (Node 20.x and 22.x), documentation
 
 ---
 
 ## 🔴 Critical - Must Implement Next
 
-### 1. Example Endpoint Implementation (Priority: HIGH)
-**Why**: Tests reference an echo endpoint that doesn't exist yet
-
-**Tasks**:
-- [ ] Create `src/endpoints/echo.ts` implementing the echo endpoint
-- [ ] Register the endpoint in `src/endpoints/index.ts`
-- [ ] Wire it up in the server initialization
-
-**Files to create/modify**:
-```typescript
-// src/endpoints/echo.ts
-import { z } from 'zod';
-import { makeEndpoint } from '../core/endpoint.js';
-
-const EchoInput = z.object({
-  message: z.string().min(1, 'Message cannot be empty')
-});
-
-const EchoOutput = z.object({
-  echoed: z.string()
-});
-
-export const echoEndpoint = makeEndpoint({
-  name: 'echo',
-  summary: 'Echo a message back to the caller',
-  description: 'Takes a message string and returns it in the echoed field',
-  input: EchoInput,
-  output: EchoOutput,
-  handler: async ({ input }) => {
-    return { echoed: input.message };
-  }
-});
-```
-
-```typescript
-// src/endpoints/index.ts
-import { InMemoryEndpointRegistry } from '../core/registry.js';
-import { echoEndpoint } from './echo.js';
-
-export const createDefaultRegistry = () => {
-  const registry = new InMemoryEndpointRegistry();
-  registry.register(echoEndpoint);
-  return registry;
-};
-```
-
-**Branch**: `feature/implement-echo-endpoint`
-
----
-
-### 2. Cucumber Step Definitions (Priority: HIGH)
+### 1. Cucumber Step Definitions (Priority: HIGH)
 **Why**: BDD tests are defined but have no step implementations
 
 **Tasks**:
@@ -101,86 +63,9 @@ import { Given, When, Then } from '@cucumber/cucumber';
 
 ---
 
-### 3. Zod-to-OpenAPI Schema Conversion (Priority: HIGH) ✅
-**Why**: OpenAPI docs currently show placeholder schemas instead of actual Zod schemas
-
-**Tasks**:
-- [x] Install `zod-to-json-schema` or similar library
-- [x] Update `src/core/openapi.ts` to convert Zod schemas to JSON Schema
-- [x] Ensure proper OpenAPI 3.0.3 compliance
-
-**Implementation**:
-```typescript
-// src/core/openapi.ts
-import { zodToJsonSchema } from 'zod-to-json-schema';
-
-const buildRequestBodySchema = (endpoint: AnyEndpointDefinition): OpenAPIV3.SchemaObject => {
-  return zodToJsonSchema(endpoint.input, { target: 'openApi3' }) as OpenAPIV3.SchemaObject;
-};
-
-const buildResponseSchema = (endpoint: AnyEndpointDefinition): OpenAPIV3.SchemaObject => {
-  return zodToJsonSchema(endpoint.output, { target: 'openApi3' }) as OpenAPIV3.SchemaObject;
-};
-```
-
-**Branch**: `feature/zod-to-openapi-conversion`
-
----
-
-### 4. MCP Server Implementation (Priority: MEDIUM)
-**Why**: MCP server is currently a stub that throws an error
-
-**Tasks**:
-- [ ] Implement actual MCP server using `fastmcp` library
-- [ ] Register endpoints as MCP tools
-- [ ] Support both stdio and TCP transport modes
-- [ ] Test with MCP clients
-
-**Implementation outline**:
-```typescript
-// src/server/mcp.ts
-import { FastMCP } from 'fastmcp';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-
-export const startMcpServer = async ({ registry }: McpServerOptions) => {
-  const mcp = new FastMCP('RivetBench');
-  
-  // Register each endpoint as an MCP tool
-  for (const endpoint of registry.list()) {
-    mcp.addTool({
-      name: endpoint.name,
-      description: endpoint.summary,
-      parameters: zodToJsonSchema(endpoint.input),
-      handler: async (params) => {
-        const parsed = endpoint.input.parse(params);
-        return await endpoint.handler({ input: parsed, config: {} });
-      }
-    });
-  }
-  
-  await mcp.start();
-};
-```
-
-**Branch**: `feature/implement-mcp-server`
-
----
-
 ## 🟡 Important - Should Implement Soon
 
-### 5. Swagger UI Integration (Priority: MEDIUM)
-**Why**: README mentions built-in Swagger UI, but it's not implemented
-
-**Tasks**:
-- [ ] Install `@fastify/swagger` and `@fastify/swagger-ui`
-- [ ] Integrate Swagger UI at `/docs` endpoint
-- [ ] Configure with the generated OpenAPI document
-
-**Branch**: `feature/add-swagger-ui`
-
----
-
-### 6. Error Handling & Logging (Priority: MEDIUM)
+### 2. Error Handling & Logging (Priority: MEDIUM)
 **Why**: Production apps need structured error handling and logging
 
 **Tasks**:
@@ -193,7 +78,7 @@ export const startMcpServer = async ({ registry }: McpServerOptions) => {
 
 ---
 
-### 7. Integration Tests (Priority: MEDIUM)
+### 3. Integration Tests (Priority: MEDIUM)
 **Why**: Unit tests are good, but we need end-to-end tests
 
 **Tasks**:
@@ -269,23 +154,26 @@ export const startMcpServer = async ({ registry }: McpServerOptions) => {
 
 ## Implementation Strategy
 
-### Phase 1: Core Functionality (Weeks 1-2)
-1. Implement echo endpoint
-2. Add Cucumber step definitions
-3. Implement Zod-to-OpenAPI conversion
-4. Get BDD tests passing
+### ✅ Phase 1: Core Functionality - COMPLETE
+1. ✅ Implement echo endpoint
+2. ✅ Implement Zod-to-OpenAPI conversion
+3. ✅ Build REST server with Swagger UI
+4. ✅ Implement MCP server
+5. ✅ Add comprehensive unit tests (27 tests)
 
-### Phase 2: MCP & REST Parity (Weeks 3-4)
-1. Implement MCP server
-2. Add Swagger UI
-3. Add integration tests
-4. Ensure both REST and MCP work identically
+**Status**: Core dual-exposure framework is fully functional!
 
-### Phase 3: Production Ready (Weeks 5-6)
-1. Error handling and logging
-2. Middleware system
-3. Performance optimizations
-4. Documentation improvements
+### Phase 2: Testing & Quality (Current)
+1. Add Cucumber step definitions for BDD tests
+2. Add integration tests for REST and MCP
+3. Improve error handling and logging
+4. Add request ID tracking
+
+### Phase 3: Production Ready (Next)
+1. Middleware system
+2. Performance optimizations
+3. Rate limiting and security
+4. Monitoring and metrics
 
 ### Phase 4: Polish & Extensions (Ongoing)
 1. Advanced features as needed

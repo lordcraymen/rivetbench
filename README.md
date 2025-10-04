@@ -69,10 +69,25 @@ export default makeEndpoint({
 ```bash
 npm install
 npm run dev:rest     # Start REST + Swagger on :3000
-npm run dev:mcp      # Start MCP server (stdio or TCP)
+npm run dev:mcp      # Start MCP server (stdio transport)
 ```
 
+### REST Server
 Swagger UI → [http://localhost:3000/docs](http://localhost:3000/docs)
+
+### MCP Server
+
+**stdio transport (default)**:
+```bash
+npm run dev:mcp
+```
+
+**HTTP Stream transport (TCP)**:
+```bash
+RIVETBENCH_MCP_TRANSPORT=tcp RIVETBENCH_MCP_PORT=3001 npm run dev:mcp
+```
+
+The MCP server exposes all registered endpoints as MCP tools with automatic schema validation.
 
 ---
 
