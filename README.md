@@ -20,7 +20,7 @@ Write an endpoint once — expose it everywhere.
 
 * **Node.js 20+** / **TypeScript**
 * **Fastify** for REST APIs
-* **@modelcontextprotocol/sdk** for MCP
+* **fastmcp** for MCP
 * **Zod** + **zod‑to‑openapi** for schema generation
 * **Vitest** for testing
 
