@@ -99,6 +99,20 @@ test(endpoints): add tests for echo endpoint
 ci(github): add code coverage reporting
 ```
 
+## Temporary Files Management
+
+**AI agents and developers**: Use the `.agent/` directory for all temporary files:
+- `.agent/memory/` - Agent context, state tracking, session notes
+- `.agent/pr/` - PR descriptions, draft content, instructions
+- `.agent/summaries/` - Implementation summaries, cleanup logs
+
+This directory is gitignored and will never be committed. See `.agent/README.md` for details.
+
+**Before creating a PR**:
+1. Review `.agent/pr/` for draft PR descriptions
+2. The `.agent/` directory will automatically be excluded from commits
+3. No manual cleanup needed - just ensure no temporary MD files exist in the root
+
 ## Pre-commit Hooks
 
 Pre-commit hooks are automatically installed via Husky. On each commit, the following checks run:
