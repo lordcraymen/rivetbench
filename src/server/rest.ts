@@ -4,6 +4,9 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 import { buildOpenApiDocument } from '../core/openapi.js';
 import { EndpointRegistry } from '../core/registry.js';
 import { loadConfig } from '../config/index.js';
+import { createLogger } from '../core/logger.js';
+import { errorHandler, notFoundHandler } from '../core/error-handler.js';
+import { EndpointNotFoundError, ValidationError } from '../core/errors.js';
 
 export interface RestServerOptions {
   registry: EndpointRegistry;
@@ -11,9 +14,18 @@ export interface RestServerOptions {
 
 export const createRestServer = async ({ registry }: RestServerOptions) => {
   const config = loadConfig();
+  const logger = createLogger();
+
   const fastify = Fastify({
-    logger: true
+    logger,
+    genReqId: () => crypto.randomUUID(),
+    requestIdHeader: 'x-request-id',
+    requestIdLogLabel: 'reqId'
   });
+
+  // Set error handlers
+  fastify.setErrorHandler(errorHandler);
+  fastify.setNotFoundHandler(notFoundHandler);
 
   const document = buildOpenApiDocument(registry.list(), {
     title: config.application.name,
@@ -42,17 +54,20 @@ export const createRestServer = async ({ registry }: RestServerOptions) => {
 
   fastify.get('/health', async () => ({ status: 'ok' }));
 
-  fastify.post('/rpc/:name', async (request, reply) => {
-    const endpoint = registry.get((request.params as { name: string }).name);
+  fastify.post('/rpc/:name', async (request) => {
+    const endpointName = (request.params as { name: string }).name;
+    const endpoint = registry.get(endpointName);
+    
     if (!endpoint) {
-      reply.code(404);
-      return { error: 'Endpoint not found' };
+      throw new EndpointNotFoundError(endpointName);
     }
 
     const parsedInput = endpoint.input.safeParse(request.body);
     if (!parsedInput.success) {
-      reply.code(400);
-      return { error: 'Invalid input', details: parsedInput.error.format() };
+      throw new ValidationError('Invalid endpoint input', {
+        endpoint: endpointName,
+        issues: parsedInput.error.format()
+      });
     }
 
     const result = await endpoint.handler({
@@ -73,17 +88,24 @@ export const createRestServer = async ({ registry }: RestServerOptions) => {
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const logger = createLogger();
+  
   import('../endpoints/index.js').then(async ({ createDefaultRegistry }) => {
     const registry = createDefaultRegistry();
-    // eslint-disable-next-line no-console
     const server = await createRestServer({ registry });
-    await server.start().catch((error) => {
-      console.error('Failed to start REST server', error);
-      process.exit(1);
-    });
+    
+    await server.start();
+    
+    logger.info(
+      {
+        host: loadConfig().rest.host,
+        port: loadConfig().rest.port,
+        endpoints: registry.list().map(e => e.name)
+      },
+      'REST server started'
+    );
   }).catch((error) => {
-    // eslint-disable-next-line no-console
-    console.error('Failed to load endpoints', error);
+    logger.error({ error }, 'Failed to start REST server');
     process.exit(1);
   });
 }

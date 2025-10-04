@@ -13,6 +13,8 @@ Write an endpoint once — expose it everywhere.
 * Automatic generation of **REST routes**, **MCP tools**, and **OpenAPI 3** specs
 * Built‑in **Swagger UI** for exploration and testing
 * Type‑safe handlers shared between REST and MCP
+* **Production-ready error handling** with custom error classes and consistent responses
+* **Structured logging** with Pino (MCP stdio-compatible)
 
 ---
 
@@ -22,7 +24,8 @@ Write an endpoint once — expose it everywhere.
 * **Fastify** for REST APIs
 * **fastmcp** for MCP
 * **Zod** + **zod‑to‑openapi** for schema generation
-* **Vitest** for testing
+* **Pino** for structured logging
+* **Vitest** + **Cucumber** for testing
 
 ---
 
@@ -109,6 +112,7 @@ The MCP server exposes all registered endpoints as MCP tools with automatic sche
 ## Documentation
 
 - **[Development Workflow](WORKFLOW.md)** - Daily workflow, branch management, and best practices
+- **[Error Handling & Logging](docs/ERROR_HANDLING.md)** - Error classes, logging configuration, and best practices
 - **[MCP Implementation Guide](docs/MCP_GUIDE.md)** - Complete guide to MCP server usage, configuration, and integration
 - **[BDD Testing Guide](docs/BDD_TESTING.md)** - Cucumber/BDD testing documentation and examples
 - **[Contributing](CONTRIBUTING.md)** - Development workflow, branch strategy, and contribution guidelines
