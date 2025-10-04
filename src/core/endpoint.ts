@@ -14,7 +14,7 @@ export interface EndpointRuntimeConfig {
   requestId?: string;
 }
 
-export interface EndpointDefinition<TInput extends ZodTypeAny, TOutput extends ZodTypeAny> {
+export interface EndpointDefinition<TInput extends ZodTypeAny = ZodTypeAny, TOutput extends ZodTypeAny = ZodTypeAny> {
   name: string;
   summary: string;
   description?: string;
@@ -23,8 +23,9 @@ export interface EndpointDefinition<TInput extends ZodTypeAny, TOutput extends Z
   handler: EndpointHandler<TInput, TOutput>;
 }
 
-export type AnyEndpointDefinition = EndpointDefinition<ZodTypeAny, ZodTypeAny>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnyEndpointDefinition = EndpointDefinition<any, any>;
 
 export const makeEndpoint = <TInput extends ZodTypeAny, TOutput extends ZodTypeAny>(
   definition: EndpointDefinition<TInput, TOutput>
-): EndpointDefinition<TInput, TOutput> => definition;
+): AnyEndpointDefinition => definition;
