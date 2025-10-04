@@ -28,4 +28,4 @@ export type AnyEndpointDefinition = EndpointDefinition<any, any>;
 
 export const makeEndpoint = <TInput extends ZodTypeAny, TOutput extends ZodTypeAny>(
   definition: EndpointDefinition<TInput, TOutput>
-): AnyEndpointDefinition => definition;
+): EndpointDefinition<TInput, TOutput> => definition;
