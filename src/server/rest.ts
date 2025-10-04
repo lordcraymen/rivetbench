@@ -54,9 +54,16 @@ export const createRestServer = ({ registry }: RestServerOptions) => {
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // eslint-disable-next-line no-console
-  createRestServer({ registry: { list: () => [], get: () => undefined, register: () => {} } }).start().catch((error) => {
-    console.error('Failed to start REST server', error);
+  import('../endpoints/index.js').then(({ createDefaultRegistry }) => {
+    const registry = createDefaultRegistry();
+    // eslint-disable-next-line no-console
+    createRestServer({ registry }).start().catch((error) => {
+      console.error('Failed to start REST server', error);
+      process.exit(1);
+    });
+  }).catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load endpoints', error);
     process.exit(1);
   });
 }
