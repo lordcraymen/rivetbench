@@ -9,11 +9,14 @@
     "dev:rest": "tsx src/server/rest.ts",
     "dev:mcp": "tsx src/server/mcp.ts",
     "test": "vitest",
-    "test:ci": "vitest run",
+    "test:unit": "vitest run",
+    "test:bdd": "NODE_OPTIONS='--import tsx/esm' cucumber-js test/features --import 'test/steps/*.ts' --tags 'not @wip'",
+    "test:bdd:all": "NODE_OPTIONS='--import tsx/esm' cucumber-js test/features --import 'test/steps/*.ts'",
+    "test:bdd:wip": "NODE_OPTIONS='--import tsx/esm' cucumber-js test/features --import 'test/steps/*.ts' --tags '@wip'",
+    "test:ci": "npm run test:unit && npm run test:bdd",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
-    "bdd": "cucumber-js",
     "prepare": "husky"
   },
   "lint-staged": {
