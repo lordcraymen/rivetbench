@@ -1,0 +1,36 @@
+# CODEOWNERS file for RivetBench
+# 
+# This file defines who should review specific parts of the codebase.
+# When a PR changes files matching a pattern, the specified owners will
+# automatically be requested as reviewers.
+#
+# Syntax: <pattern> <owner1> <owner2>
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @lordcraymen
+
+# Core framework code
+/src/core/ @lordcraymen
+
+# Server implementations
+/src/server/ @lordcraymen
+
+# Configuration
+/src/config/ @lordcraymen
+
+# CI/CD workflows
+/.github/ @lordcraymen
+
+# Tests
+/test/ @lordcraymen
+
+# Documentation
+*.md @lordcraymen
+/docs/ @lordcraymen
+
+# Dependencies and build configuration
+package.json @lordcraymen
+package-lock.json @lordcraymen
+tsconfig.json @lordcraymen
+.eslintrc.cjs @lordcraymen

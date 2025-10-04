@@ -1,5 +1,6 @@
 import { z, ZodTypeAny } from 'zod';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface EndpointContext<TInput extends ZodTypeAny, TOutput extends ZodTypeAny> {
   input: z.infer<TInput>;
   config: EndpointRuntimeConfig;
