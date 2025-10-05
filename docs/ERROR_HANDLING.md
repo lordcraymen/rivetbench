@@ -186,18 +186,30 @@ In production, logs are JSON for parsing:
 
 ## Request ID Tracking
 
-Every request gets a unique ID for correlation:
+Every request gets a unique ID for correlation across both REST and MCP transports.
 
 **REST:**
-```bash
-# Generated automatically
-X-Request-Id: 2af7e653-8e51-41aa-b674-55a810506544
-```
-
-All logs for that request include `reqId: "2af7e653-8e51-41aa-b674-55a810506544"`
+- Generated automatically via `crypto.randomUUID()`
+- Included in response header: `X-Request-Id: 2af7e653-8e51-41aa-b674-55a810506544`
+- All logs for that request include `reqId: "2af7e653-8e51-41aa-b674-55a810506544"`
+- Passed to endpoint handlers via `config.requestId`
 
 **MCP:**
-Request IDs are passed to endpoint handlers via `config.requestId`
+- Generated automatically for each tool execution via `crypto.randomUUID()`
+- Note: MCP uses JSON-RPC 2.0 which has built-in request IDs, but FastMCP doesn't expose them. We generate our own for application-level tracing.
+- Passed to endpoint handlers via `config.requestId`
+- Included in error logs for traceability
+
+**Usage in Handlers:**
+```typescript
+handler: async ({ input, config }) => {
+  const requestId = config.requestId; // Available in both REST and MCP
+  logger.info(`Processing request ${requestId}`);
+  return { result: 'success' };
+}
+```
+
+Both transports use RFC 4122 UUID format for consistency and compatibility.
 
 ## Error Handler Middleware
 
