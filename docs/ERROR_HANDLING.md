@@ -152,6 +152,8 @@ console.error('Debug info');
 
 // ❌ BAD - breaks MCP stdio protocol!
 console.log('This will break MCP!');
+console.info('This will also break MCP!');
+console.warn('This will also break MCP!');
 ```
 
 ### Log Levels
