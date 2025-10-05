@@ -26,6 +26,11 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
       description: endpoint.description || endpoint.summary,
       parameters: endpoint.input as never, // Zod schemas are compatible with StandardSchemaV1
       execute: async (args, context) => {
+        // Generate a unique request ID for observability parity with REST.
+        // Note: While MCP (JSON-RPC 2.0) has a built-in request ID, FastMCP doesn't
+        // expose it in the context. We generate our own UUID for application-level tracing.
+        const requestId = crypto.randomUUID();
+        
         try {
           // Validate and parse input using Zod schema
           const parsedInput = endpoint.input.safeParse(args);
@@ -37,10 +42,10 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
             });
           }
           
-          // Execute the endpoint handler
+          // Execute the endpoint handler with request ID for observability
           const result = await endpoint.handler({
             input: parsedInput.data,
-            config: {}
+            config: { requestId }
           });
           
           // Validate output
@@ -62,6 +67,7 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
           // Log error using FastMCP's logger (writes to stderr)
           context.log.error('Tool execution failed', {
             tool: endpoint.name,
+            requestId,
             errorCode: rivetError.code,
             errorMessage: rivetError.message
           } as Record<string, string>);
