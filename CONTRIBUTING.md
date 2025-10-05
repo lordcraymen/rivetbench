@@ -201,12 +201,44 @@ describe('makeEndpoint', () => {
 - Avoid `any` type - use `unknown` if necessary
 - Use `interface` for object shapes, `type` for unions/intersections
 
+## SOLID Principles
+
+RivetBench follows SOLID principles to ensure maintainable, testable, and flexible code:
+
+- **Single Responsibility**: Each module/function has one clear purpose
+- **Open/Closed**: Extend functionality without modifying existing code
+- **Liskov Substitution**: Subclasses can replace parent classes without breaking functionality
+- **Interface Segregation**: Keep interfaces small and focused
+- **Dependency Inversion**: Inject dependencies, don't create them internally
+
+**📚 Required Reading**: [`docs/SOLID_PRINCIPLES.md`](./docs/SOLID_PRINCIPLES.md)
+
+### Before Submitting Your PR
+
+Complete the **Self-Review Checklist**: [`docs/SELF_REVIEW_CHECKLIST.md`](./docs/SELF_REVIEW_CHECKLIST.md)
+
+This comprehensive checklist ensures:
+- ✅ SOLID principles are followed
+- ✅ Dependencies are properly injected
+- ✅ Tests are comprehensive and deterministic
+- ✅ Code quality standards are met
+- ✅ Documentation is updated
+
+**Key Points:**
+- **Inject dependencies** as parameters, don't call `loadConfig()` or global getters internally
+- **Load configuration once** at application startup, then pass it through
+- **Each function should do one thing** and do it well
+- **Make dependencies explicit** in function signatures
+- **Tests should use dependency injection** for predictability
+
 ## Documentation
 
 - Update `README.md` for user-facing changes
 - Update `agent.md` for workflow changes
 - Add JSDoc comments for new public APIs
 - Update `cleanup.md` for temporary scaffolding
+- Review `docs/SOLID_PRINCIPLES.md` when designing new features
+- Use `docs/SELF_REVIEW_CHECKLIST.md` before submitting PRs
 
 ## BDD and Interface-First Development
 
