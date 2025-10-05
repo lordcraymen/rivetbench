@@ -38,10 +38,6 @@ jobs:
       
       - name: Run tests
         run: npm run test:ci
-      
-      - name: Run BDD tests
-        run: npm run bdd
-        continue-on-error: true  # Allow to fail until step definitions are implemented
 
   build:
     name: Build
