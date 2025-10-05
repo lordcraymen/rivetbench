@@ -1,5 +1,5 @@
 import pino, { Logger as PinoLogger } from 'pino';
-import { loadConfig } from '../config/index.js';
+import type { ServerConfig } from '../config/index.js';
 
 /**
  * Logger configuration for RivetBench
@@ -10,18 +10,14 @@ import { loadConfig } from '../config/index.js';
  * - Violating this will break the MCP protocol
  */
 
-let logger: PinoLogger | null = null;
-
 /**
  * Create and configure the Pino logger
  * Always writes to stderr to maintain MCP stdio compatibility
+ * 
+ * @param config - Server configuration (injected dependency)
  */
-export function createLogger(): PinoLogger {
-  if (logger) {
-    return logger;
-  }
-
-  const config = loadConfig();
+export function createLogger(config: ServerConfig): PinoLogger {
+  let logger: PinoLogger;
 
   // Use pretty printing in development (still writes to stderr)
   if (config.logging.pretty) {
@@ -55,18 +51,11 @@ export function createLogger(): PinoLogger {
 }
 
 /**
- * Get the logger instance (creates if doesn't exist)
- */
-export function getLogger(): PinoLogger {
-  if (!logger) {
-    return createLogger();
-  }
-  return logger;
-}
-
-/**
  * Create a child logger with additional context
+ * 
+ * @param logger - Parent logger instance
+ * @param context - Additional context to include in all child logs
  */
-export function createChildLogger(context: Record<string, unknown>): PinoLogger {
-  return getLogger().child(context);
+export function createChildLogger(logger: PinoLogger, context: Record<string, unknown>): PinoLogger {
+  return logger.child(context);
 }

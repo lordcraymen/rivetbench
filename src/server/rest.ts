@@ -3,18 +3,18 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import { buildOpenApiDocument } from '../core/openapi.js';
 import { EndpointRegistry } from '../core/registry.js';
-import { loadConfig } from '../config/index.js';
+import type { ServerConfig } from '../config/index.js';
 import { createLogger } from '../core/logger.js';
-import { errorHandler, notFoundHandler } from '../core/error-handler.js';
+import { createErrorHandler, createNotFoundHandler } from '../core/error-handler.js';
 import { EndpointNotFoundError, ValidationError } from '../core/errors.js';
 
 export interface RestServerOptions {
   registry: EndpointRegistry;
+  config: ServerConfig;
 }
 
-export const createRestServer = async ({ registry }: RestServerOptions) => {
-  const config = loadConfig();
-  const logger = createLogger();
+export const createRestServer = async ({ registry, config }: RestServerOptions) => {
+  const logger = createLogger(config);
 
   const fastify = Fastify({
     logger,
@@ -23,9 +23,9 @@ export const createRestServer = async ({ registry }: RestServerOptions) => {
     requestIdLogLabel: 'reqId'
   });
 
-  // Set error handlers
-  fastify.setErrorHandler(errorHandler);
-  fastify.setNotFoundHandler(notFoundHandler);
+  // Set error handlers with logger dependency
+  fastify.setErrorHandler(createErrorHandler(logger));
+  fastify.setNotFoundHandler(createNotFoundHandler(logger));
 
   const document = buildOpenApiDocument(registry.list(), {
     title: config.application.name,
@@ -88,24 +88,27 @@ export const createRestServer = async ({ registry }: RestServerOptions) => {
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const logger = createLogger();
-  
-  import('../endpoints/index.js').then(async ({ createDefaultRegistry }) => {
+  import('../config/index.js').then(async ({ loadConfig }) => {
+    const config = loadConfig();
+    const logger = createLogger(config);
+    
+    const { createDefaultRegistry } = await import('../endpoints/index.js');
     const registry = createDefaultRegistry();
-    const server = await createRestServer({ registry });
+    const server = await createRestServer({ registry, config });
     
     await server.start();
     
     logger.info(
       {
-        host: loadConfig().rest.host,
-        port: loadConfig().rest.port,
+        host: config.rest.host,
+        port: config.rest.port,
         endpoints: registry.list().map(e => e.name)
       },
       'REST server started'
     );
   }).catch((error) => {
-    logger.error({ error }, 'Failed to start REST server');
+    // eslint-disable-next-line no-console
+    console.error('Failed to start REST server', error);
     process.exit(1);
   });
 }

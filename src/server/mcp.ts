@@ -1,14 +1,14 @@
 import { FastMCP } from 'fastmcp';
 import { EndpointRegistry } from '../core/registry.js';
-import { loadConfig } from '../config/index.js';
+import type { ServerConfig } from '../config/index.js';
 import { ValidationError, toRivetBenchError } from '../core/errors.js';
 
 export interface McpServerOptions {
   registry: EndpointRegistry;
+  config: ServerConfig;
 }
 
-export const startMcpServer = async ({ registry }: McpServerOptions) => {
-  const config = loadConfig();
+export const startMcpServer = async ({ registry, config }: McpServerOptions) => {
   
   // Create FastMCP server instance
   const mcp = new FastMCP({
@@ -103,9 +103,11 @@ export const startMcpServer = async ({ registry }: McpServerOptions) => {
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  import('../endpoints/index.js').then(async ({ createDefaultRegistry }) => {
+  import('../config/index.js').then(async ({ loadConfig }) => {
+    const config = loadConfig();
+    const { createDefaultRegistry } = await import('../endpoints/index.js');
     const registry = createDefaultRegistry();
-    await startMcpServer({ registry });
+    await startMcpServer({ registry, config });
   }).catch((error) => {
     // eslint-disable-next-line no-console
     console.error('Failed to start MCP server', error);

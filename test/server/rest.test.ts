@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 import { createRestServer } from '../../src/server/rest.js';
+import { loadConfig } from '../../src/config/index.js';
 import { InMemoryEndpointRegistry } from '../../src/core/registry.js';
 import { makeEndpoint } from '../../src/core/endpoint.js';
 import type { FastifyInstance } from 'fastify';
@@ -11,6 +12,9 @@ describe('REST Server Integration', () => {
   let fastify: FastifyInstance<any, any, any, any>;
   
   beforeAll(async () => {
+    // Load configuration once for deterministic testing
+    const config = loadConfig();
+    
     // Create a test registry with the echo endpoint
     const registry = new InMemoryEndpointRegistry();
     registry.register(makeEndpoint({
@@ -22,7 +26,7 @@ describe('REST Server Integration', () => {
       handler: async ({ input }) => ({ echoed: input.message })
     }));
     
-    server = await createRestServer({ registry });
+    server = await createRestServer({ registry, config });
     fastify = server.fastify;
     
     // Start server on a random port for testing

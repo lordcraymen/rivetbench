@@ -1,6 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { RivetBenchWorld } from './world.js';
 import { createRestServer } from '../../src/server/rest.js';
+import { loadConfig } from '../../src/config/index.js';
 import { createDefaultRegistry } from '../../src/endpoints/index.js';
 
 /**
@@ -8,8 +9,9 @@ import { createDefaultRegistry } from '../../src/endpoints/index.js';
  * Starts the REST server on a random available port
  */
 Given('the REST server is running', async function (this: RivetBenchWorld) {
+  const config = loadConfig();
   const registry = createDefaultRegistry();
-  const server = await createRestServer({ registry });
+  const server = await createRestServer({ registry, config });
   
   // Start on random port for testing
   await server.fastify.listen({ host: '127.0.0.1', port: 0 });

@@ -1,19 +1,20 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
-import { getLogger } from './logger.js';
+import type { Logger as PinoLogger } from 'pino';
 import { isRivetBenchError, ValidationError, toRivetBenchError } from './errors.js';
 
-const logger = getLogger();
-
 /**
- * Fastify error handler for consistent error responses
+ * Create a Fastify error handler with logger dependency injection
  * Handles RivetBench errors, Zod validation errors, and unexpected errors
+ * 
+ * @param logger - Logger instance to use for error logging
  */
-export function errorHandler(
-  error: FastifyError | Error,
-  request: FastifyRequest,
-  reply: FastifyReply
-): void {
+export function createErrorHandler(logger: PinoLogger) {
+  return function errorHandler(
+    error: FastifyError | Error,
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): void {
   // Log the error with context
   const logContext = {
     method: request.method,
@@ -66,26 +67,31 @@ export function errorHandler(
   logger.error({ ...logContext, stack: error.stack }, 'Unexpected error');
 
   reply.status(rivetError.statusCode).send(rivetError.toJSON());
+  };
 }
 
 /**
- * Not found handler for unregistered routes
+ * Create a not found handler with logger dependency injection
+ * 
+ * @param logger - Logger instance to use for logging
  */
-export function notFoundHandler(request: FastifyRequest, reply: FastifyReply): void {
-  logger.warn(
-    {
-      method: request.method,
-      url: request.url,
-      reqId: request.id
-    },
-    'Route not found'
-  );
+export function createNotFoundHandler(logger: PinoLogger) {
+  return function notFoundHandler(request: FastifyRequest, reply: FastifyReply): void {
+    logger.warn(
+      {
+        method: request.method,
+        url: request.url,
+        reqId: request.id
+      },
+      'Route not found'
+    );
 
-  reply.status(404).send({
-    error: {
-      name: 'NotFoundError',
-      code: 'NOT_FOUND',
-      message: `Route ${request.method} ${request.url} not found`
-    }
-  });
+    reply.status(404).send({
+      error: {
+        name: 'NotFoundError',
+        code: 'NOT_FOUND',
+        message: `Route ${request.method} ${request.url} not found`
+      }
+    });
+  };
 }

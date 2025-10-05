@@ -1,6 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { RivetBenchWorld } from './world.js';
 import { createRestServer } from '../../src/server/rest.js';
+import { loadConfig } from '../../src/config/index.js';
 import { createDefaultRegistry } from '../../src/endpoints/index.js';
 
 /**
@@ -17,8 +18,9 @@ Given('the {string} endpoint is registered with input {string}', async function 
 
   // Start REST server if not already running
   if (!this.restServer) {
+    const config = loadConfig();
     const registry = createDefaultRegistry();
-    const server = await createRestServer({ registry });
+    const server = await createRestServer({ registry, config });
     await server.fastify.listen({ host: '127.0.0.1', port: 0 });
     this.restServer = server.fastify;
     const address = server.fastify.server.address();
@@ -42,8 +44,9 @@ Given('the {string} endpoint expects a non-empty {string}', async function (
 
   // Start REST server if not already running
   if (!this.restServer) {
+    const config = loadConfig();
     const registry = createDefaultRegistry();
-    const server = await createRestServer({ registry });
+    const server = await createRestServer({ registry, config });
     await server.fastify.listen({ host: '127.0.0.1', port: 0 });
     this.restServer = server.fastify;
     const address = server.fastify.server.address();
