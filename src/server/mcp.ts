@@ -95,10 +95,10 @@ export const startMcpServer = async ({ registry }: McpServerOptions) => {
   });
 
   // eslint-disable-next-line no-console
-  console.info(`MCP server started with ${transportType} transport`);
+  console.error(`MCP server started with ${transportType} transport`);
   // eslint-disable-next-line no-console
-  console.info(`Exposed tools: ${endpoints.map(e => e.name).join(', ')}`);
-  
+  console.error(`Exposed tools: ${endpoints.map(e => e.name).join(', ')}`);
+
   return mcp;
 };
 
