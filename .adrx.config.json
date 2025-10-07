@@ -1,0 +1,44 @@
+{
+  "statuses": {
+    "draft": {
+      "active": true,
+      "includeInDigest": false,
+      "description": "Initial draft of architectural decision"
+    },
+    "proposed": {
+      "active": true,
+      "includeInDigest": false,
+      "description": "Decision proposed and awaiting review"
+    },
+    "accepted": {
+      "active": true,
+      "includeInDigest": true,
+      "description": "Decision has been accepted and approved"
+    },
+    "approved": {
+      "active": true,
+      "includeInDigest": true,
+      "description": "Decision has been approved for implementation"
+    },
+    "rejected": {
+      "active": false,
+      "includeInDigest": false,
+      "description": "Decision was rejected and will not be implemented"
+    },
+    "superseded": {
+      "active": false,
+      "includeInDigest": false,
+      "description": "Decision was replaced by a newer decision"
+    },
+    "deprecated": {
+      "active": false,
+      "includeInDigest": false,
+      "description": "Decision is deprecated but may still be in use"
+    }
+  },
+  "validation": {
+    "summaryLimit": 300,
+    "strictWorkflow": false,
+    "requiredFields": ["title", "status", "summary"]
+  }
+}

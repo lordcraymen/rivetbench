@@ -1,0 +1,136 @@
+{
+  "generatedAt": "2025-10-07T20:52:52.213Z",
+  "total": 7,
+  "adrs": [
+    {
+      "id": "ADR-0001",
+      "title": "ADR-0001: Dual Transport Architecture (REST + MCP)",
+      "status": "accepted",
+      "summary": "Implement unified endpoints that can be exposed over both REST HTTP and MCP (Model Context Protocol) transports, enabling AI agents and traditional HTTP clients to use the same business logic.",
+      "date": "2025-10-07",
+      "tags": [
+        "architecture",
+        "transport",
+        "mcp",
+        "rest"
+      ],
+      "modules": [
+        "src/server/",
+        "src/core/"
+      ],
+      "path": "docs/adr/ADR-0001-dual-transport-architecture.md"
+    },
+    {
+      "id": "ADR-0002",
+      "title": "ADR-0002: RPC-over-REST Design Pattern",
+      "status": "accepted",
+      "summary": "Use RPC-over-REST pattern with POST-only endpoints dispatched by name rather than traditional RESTful resource modeling, optimizing for AI agent interaction and unified transport behavior.",
+      "date": "2025-10-07",
+      "tags": [
+        "architecture",
+        "rest",
+        "rpc",
+        "api-design"
+      ],
+      "modules": [
+        "src/server/rest.ts",
+        "src/core/"
+      ],
+      "path": "docs/adr/ADR-0002-rpc-over-rest-design.md"
+    },
+    {
+      "id": "ADR-0003",
+      "title": "ADR-0003: Dependency Injection Pattern",
+      "status": "accepted",
+      "summary": "Load configuration once at application entry point and inject as parameter to all components, eliminating hidden dependencies and enabling deterministic testing.",
+      "date": "2025-10-07",
+      "tags": [
+        "architecture",
+        "dependency-injection",
+        "configuration",
+        "solid-principles"
+      ],
+      "modules": [
+        "src/config/",
+        "src/server/",
+        "src/core/"
+      ],
+      "path": "docs/adr/ADR-0003-dependency-injection-pattern.md"
+    },
+    {
+      "id": "ADR-0004",
+      "title": "ADR-0004: Zod Schema-Driven Architecture",
+      "status": "accepted",
+      "summary": "Use Zod schemas as the single source of truth for input/output validation, TypeScript types, OpenAPI documentation, and MCP tool definitions across all transports.",
+      "date": "2025-10-07",
+      "tags": [
+        "architecture",
+        "validation",
+        "schemas",
+        "type-safety",
+        "openapi"
+      ],
+      "modules": [
+        "src/core/endpoint.ts",
+        "src/core/openapi.ts"
+      ],
+      "path": "docs/adr/ADR-0004-zod-schema-driven-architecture.md"
+    },
+    {
+      "id": "ADR-0005",
+      "title": "ADR-0005: MCP Stdio Logging Constraints",
+      "status": "accepted",
+      "summary": "Restrict all diagnostic output to stderr when running MCP in stdio mode to prevent corruption of JSON-RPC protocol stream on stdout.",
+      "date": "2025-10-07",
+      "tags": [
+        "architecture",
+        "logging",
+        "mcp",
+        "stdio",
+        "protocol"
+      ],
+      "modules": [
+        "src/core/logger.ts",
+        "src/server/mcp.ts"
+      ],
+      "path": "docs/adr/ADR-0005-mcp-stdio-logging-constraints.md"
+    },
+    {
+      "id": "ADR-0006",
+      "title": "ADR-0006: Structured Error Handling",
+      "status": "accepted",
+      "summary": "Define custom error classes extending RivetBenchError base class with structured JSON serialization for consistent error responses across REST and MCP transports.",
+      "date": "2025-10-07",
+      "tags": [
+        "architecture",
+        "error-handling",
+        "transport-parity",
+        "json"
+      ],
+      "modules": [
+        "src/core/errors.ts",
+        "src/core/error-handler.ts"
+      ],
+      "path": "docs/adr/ADR-0006-structured-error-handling.md"
+    },
+    {
+      "id": "ADR-0007",
+      "title": "ADR-0007: Transport Parity Requirements",
+      "status": "accepted",
+      "summary": "Enforce identical behavior across REST and MCP transports including request ID generation, validation, error handling, and request tracing for consistent client experience.",
+      "date": "2025-10-07",
+      "tags": [
+        "architecture",
+        "transport-parity",
+        "consistency",
+        "testing"
+      ],
+      "modules": [
+        "src/server/rest.ts",
+        "src/server/mcp.ts",
+        "test/features/"
+      ],
+      "path": "docs/adr/ADR-0007-transport-parity-requirements.md"
+    }
+  ]
+}

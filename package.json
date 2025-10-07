@@ -48,6 +48,7 @@
   },
   "devDependencies": {
     "@cucumber/cucumber": "^10.0.0",
+    "@lordcraymen/adr-toolkit": "^3.0.0",
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^7.6.0",
     "@typescript-eslint/parser": "^7.6.0",
