@@ -87,26 +87,36 @@ export const createRestServer = async ({ registry, config }: RestServerOptions) 
   };
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  import('../config/index.js').then(async ({ loadConfig }) => {
-    const config = loadConfig();
-    const logger = createLogger(config);
-    
-    const { createDefaultRegistry } = await import('../endpoints/index.js');
-    const registry = createDefaultRegistry();
-    const server = await createRestServer({ registry, config });
-    
-    await server.start();
-    
-    logger.info(
-      {
-        host: config.rest.host,
-        port: config.rest.port,
-        endpoints: registry.list().map(e => e.name)
-      },
-      'REST server started'
-    );
-  }).catch((error) => {
+// Start server when this file is run directly
+async function startServer() {
+  const { loadConfig } = await import('../config/index.js');
+  const config = loadConfig();
+  const logger = createLogger(config);
+  
+  const { createDefaultRegistry } = await import('../endpoints/index.js');
+  const registry = createDefaultRegistry();
+  const server = await createRestServer({ registry, config });
+  
+  await server.start();
+  
+  logger.info(
+    {
+      host: config.rest.host,
+      port: config.rest.port,
+      endpoints: registry.list().map(e => e.name)
+    },
+    'REST server started'
+  );
+}
+
+// Simple check: if this file is being run directly (not imported)
+// We check if the process argv includes this file name
+const isMainModule = process.argv.some(arg => 
+  arg.includes('rest.ts') || arg.includes('rest.js')
+);
+
+if (isMainModule) {
+  startServer().catch((error) => {
     // eslint-disable-next-line no-console
     console.error('Failed to start REST server', error);
     process.exit(1);

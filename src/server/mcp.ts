@@ -108,13 +108,23 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
   return mcp;
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  import('../config/index.js').then(async ({ loadConfig }) => {
-    const config = loadConfig();
-    const { createDefaultRegistry } = await import('../endpoints/index.js');
-    const registry = createDefaultRegistry();
-    await startMcpServer({ registry, config });
-  }).catch((error) => {
+// Start MCP server when this file is run directly
+async function startServer() {
+  const { loadConfig } = await import('../config/index.js');
+  const config = loadConfig();
+  const { createDefaultRegistry } = await import('../endpoints/index.js');
+  const registry = createDefaultRegistry();
+  await startMcpServer({ registry, config });
+}
+
+// Simple check: if this file is being run directly (not imported)
+// We check if the process argv includes this file name
+const isMainModule = process.argv.some(arg => 
+  arg.includes('mcp.ts') || arg.includes('mcp.js')
+);
+
+if (isMainModule) {
+  startServer().catch((error) => {
     // eslint-disable-next-line no-console
     console.error('Failed to start MCP server', error);
     process.exit(1);
