@@ -8,6 +8,7 @@
     "build": "tsc --noEmit",
     "dev:rest": "tsx src/server/rest.ts",
     "dev:mcp": "tsx src/server/mcp.ts",
+    "dev:cli": "tsx src/cli/index.ts",
     "test": "vitest",
     "test:unit": "vitest run",
     "test:bdd": "NODE_OPTIONS='--import tsx/esm' cucumber-js test/features --import 'test/steps/*.ts' --tags 'not @wip'",
