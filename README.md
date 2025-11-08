@@ -73,6 +73,7 @@ export default makeEndpoint({
 npm install
 npm run dev:rest     # Start REST + Swagger on :3000
 npm run dev:mcp      # Start MCP server (stdio transport)
+npm run dev:cli      # Launch the runtime-generated CLI
 ```
 
 ### REST Server
@@ -91,6 +92,18 @@ RIVETBENCH_MCP_TRANSPORT=tcp RIVETBENCH_MCP_PORT=3001 npm run dev:mcp
 ```
 
 The MCP server exposes all registered endpoints as MCP tools with automatic schema validation.
+
+### CLI
+
+The CLI inspects the endpoint registry at startup so that available commands always mirror the REST and MCP transports.
+
+```bash
+# List registered endpoints
+npm run dev:cli -- list
+
+# Invoke an endpoint with JSON input
+npm run dev:cli -- call echo --input '{"message":"Hello"}'
+```
 
 ---
 

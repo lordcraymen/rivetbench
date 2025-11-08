@@ -103,6 +103,29 @@ context.log.info('Info');      // Safe (FastMCP → stderr)
 
 ---
 
+### 4. Runtime CLI Generation (October 2025)
+
+**Problem**: REST and MCP transports offered runtime registry-driven discovery, but the CLI required manual wiring, creating drift.
+
+**Solution**: Build the CLI on top of the shared endpoint registry so commands are generated dynamically at startup, mirroring other transports.
+
+**Pattern**:
+```typescript
+const cli = createCli({ registry, config });
+await cli.run(['call', 'echo', '--input', '{"message":"hi"}']);
+```
+
+**Rationale**:
+- Maintains parity across transports without build steps
+- Reduces duplication by reusing validation + handlers
+- Keeps developer experience consistent for new endpoints
+
+**Guardrail Updates**:
+- Added CLI coverage to README quick start instructions
+- Reinforced runtime registry usage for new transports
+
+---
+
 ## Testing Patterns
 
 ### 1. BDD Tagging Workflow (October 2025)
