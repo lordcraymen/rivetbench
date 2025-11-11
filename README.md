@@ -95,31 +95,9 @@ The MCP server exposes all registered endpoints as MCP tools with automatic sche
 
 ### CLI
 
-The CLI inspects the endpoint registry at startup so that available commands always mirror the REST and MCP transports.
+The CLI inspects the endpoint registry at startup so that available commands always mirror the REST and MCP transports. It provides flexible input methods and output formatting:
 
-```bash
-# List registered endpoints
-npm run dev:cli -- list
-
-# Invoke an endpoint with named parameters (recommended)
-npm run dev:cli -- call echo -message "Hello World"
-
-# Invoke an endpoint with JSON input
-npm run dev:cli -- call echo --input '{"message":"Hello World"}'
-
-# Get raw output (simple values only, useful for scripting)
-npm run dev:cli -- call echo -message "Hello" --raw
-npm run dev:cli -- call uppercase -text "hello world" -r
-
-# Multiple named parameters with automatic type parsing
-npm run dev:cli -- call myfunc -text "test" -number 42 -enabled true
-```
-
-## CLI Features
-
-The CLI provides flexible input methods and output formatting:
-
-### Input Methods
+#### Input Methods
 
 **Named Parameters** (recommended for most use cases):
 ```bash
@@ -139,7 +117,7 @@ npm run dev:cli -- call echo --input '{"message": "Hello World"}'
 npm run dev:cli -- call echo -i '{"message": "Hello World"}'  # short form
 ```
 
-### Output Formatting
+#### Output Formatting
 
 **JSON Output** (default):
 ```bash
@@ -158,9 +136,13 @@ npm run dev:cli -- call uppercase -text "world" -r  # short form
 
 Raw output automatically extracts simple values from single-property objects. Complex objects fall back to JSON formatting even in raw mode.
 
-### Getting Help
+#### Basic Commands
 
 ```bash
+# List registered endpoints
+npm run dev:cli -- list
+
+# Get help
 npm run dev:cli -- --help  # Show detailed CLI usage and examples
 npm run dev:cli            # Also shows help when no command provided
 ```
