@@ -4,8 +4,8 @@ This document outlines the next steps for implementing features and improvements
 
 ## Current Status
 
-**Version**: 0.1.0 - MCP Implementation Complete  
-**Date**: October 2025
+**Version**: 0.2.0 - Testing & CLI Complete  
+**Date**: November 2025
 
 ### What's Working
 
@@ -13,52 +13,58 @@ This document outlines the next steps for implementing features and improvements
 ✅ **REST Server**: Full REST API with Swagger UI at `/docs`  
 ✅ **MCP Server**: Dual transport (stdio + TCP) MCP implementation  
 ✅ **Schema Generation**: Automatic OpenAPI + MCP JSON Schema  
-✅ **Testing**: 27 unit tests passing  
+✅ **CLI Tool**: Full CLI with named parameters and JSON input  
+✅ **BDD Testing**: Complete Cucumber step definitions and integration tests  
+✅ **Error Handling**: Custom error classes and structured logging  
+✅ **Testing**: Unit + integration tests passing  
 ✅ **CI/CD**: GitHub Actions with Node 20.x and 22.x  
-✅ **Quality**: Pre-commit hooks, linting, type checking  
+✅ **Quality**: Pre-commit hooks, linting, type checking
 
----
+## Completed Features (Version 0.2.0)
 
-## Next: Version 0.2.0 - Testing & Quality
-
-### 1. Cucumber Step Definitions (Priority: HIGH)
-**Status**: 🔴 Not Started  
-**Branch**: `feature/implement-cucumber-steps`
-
-BDD tests are defined but need step implementations:
-- [ ] Implement step definitions for `echo.feature`
-- [ ] Implement step definitions for `health.feature`
-- [ ] Configure Cucumber execution in test suite
-- [ ] Document BDD testing approach
-
-### 2. Integration Tests (Priority: HIGH)
-**Status**: 🔴 Not Started  
-**Branch**: `feature/integration-tests`
-
-End-to-end testing with real servers:
-- [ ] REST server integration tests with real HTTP requests
-- [ ] MCP server integration tests with real protocol
-- [ ] Cross-protocol consistency tests
-- [ ] Add integration tests to CI pipeline
-
-### 3. Error Handling & Logging (Priority: HIGH)
+### ✅ **CLI Tool Implementation**
 **Status**: ✅ **COMPLETE**  
-**Branch**: `feature/error-handling-logging`
+**Features**:
+- [x] Named parameter support (`rivetbench call echo -message "hello"`)
+- [x] JSON input mode (`rivetbench call echo --input '{"message":"hello"}'`)
+- [x] Raw output mode (`rivetbench call echo -message "hello" --raw`)
+- [x] Endpoint listing (`rivetbench list`)
+- [x] Help system (`rivetbench --help`)
+- [x] Full test coverage with memory streams
 
-Production-grade error handling:
+### ✅ **BDD Testing Framework**
+**Status**: ✅ **COMPLETE**  
+**Features**:
+- [x] Complete step definitions for all transports (REST, CLI)
+- [x] Integration tests with real server instances
+- [x] Feature tagging workflow (`@implemented`, `@wip`)
+- [x] Cucumber configuration and execution scripts
+- [x] Cross-transport consistency testing
+- [x] Test isolation with dependency injection
+
+### ✅ **Error Handling & Logging**
+**Status**: ✅ **COMPLETE**  
+**Features**:
 - [x] Custom error classes (ValidationError, EndpointNotFoundError, InternalServerError, ConfigurationError)
 - [x] Structured logging with Pino (stderr-compatible for MCP)
 - [x] Error middleware for consistent REST responses
 - [x] Request ID tracking through pipeline
 - [x] MCP error handling with FastMCP logger
-- [x] Comprehensive test coverage (16 new tests)
-- [x] Documentation guide
+- [x] Comprehensive test coverage
 
----
+---## Next: Version 0.3.0 - Production Ready
 
-## Future: Version 0.3.0 - Production Ready
+### 1. Request ID Parity (Priority: HIGH)
+**Status**: � In Progress  
+**Branch**: `feature/request-id-parity`
 
-### Middleware System
+Complete request ID consistency across transports:
+- [x] Request ID generation via `crypto.randomUUID()`
+- [ ] Complete request ID context passing in MCP transport
+- [ ] Finalize request tracing through all endpoint handlers
+- [ ] Complete BDD test coverage for request ID parity
+
+### 2. Middleware System (Priority: MEDIUM)
 **Status**: 🔴 Not Started  
 **Branch**: `feature/endpoint-middleware`
 
@@ -68,7 +74,7 @@ Pre/post processing for endpoints:
 - [ ] Built-in middleware (auth, logging, rate limiting)
 - [ ] Documentation and examples
 
-### Performance & Monitoring
+### 3. Performance & Monitoring (Priority: MEDIUM)
 **Status**: 🔴 Not Started  
 **Branch**: `feature/production-readiness`
 
@@ -131,6 +137,22 @@ See `agent.md` for detailed workflow guidance.
 
 ## Version History
 
+### Version 0.2.0 (November 2025) - Testing & CLI Complete
+**Highlights**: Complete BDD testing framework and CLI tool
+
+**Added**:
+- Complete Cucumber step definitions for all feature files
+- CLI tool with named parameters and JSON input support
+- Integration tests with real server instances
+- Raw output mode for CLI (`--raw`)
+- Cross-transport consistency testing
+- BDD tagging workflow (`@implemented`, `@wip`)
+
+**Enhanced**:
+- Test coverage expanded significantly
+- Documentation for testing approach
+- CI pipeline includes BDD tests
+
 ### Version 0.1.0 (October 2025) - MCP Implementation
 **Highlights**: Complete dual-exposure framework (REST + MCP)
 
@@ -139,7 +161,9 @@ See `agent.md` for detailed workflow guidance.
 - REST server with Fastify and Swagger UI
 - MCP server with dual transport (stdio + TCP)
 - OpenAPI 3 generation
-- Comprehensive test suite (27 tests)
+- Custom error classes and structured logging
+- Request ID tracking through pipeline
+- Comprehensive test suite
 - CI/CD pipeline with GitHub Actions
 - Pre-commit hooks and quality checks
 
