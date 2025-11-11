@@ -53,21 +53,53 @@ When('I run {string}', async function (this: RivetBenchWorld, command: string) {
 
 Then('I should receive JSON containing {string}', function (this: RivetBenchWorld, expectedJson: string) {
   const expected = JSON.parse(expectedJson);
-  const actual = JSON.parse(this.cliOutput!.trim());
+  
+  // Safely parse CLI output with error handling
+  const outputTrimmed = this.cliOutput!.trim();
+  if (!outputTrimmed) {
+    throw new Error('CLI output is empty, cannot parse as JSON');
+  }
+  
+  let actual;
+  try {
+    actual = JSON.parse(outputTrimmed);
+  } catch (error) {
+    throw new Error(`Failed to parse CLI output as JSON: "${outputTrimmed}". Error: ${error instanceof Error ? error.message : String(error)}`);
+  }
   
   this.expect(this.cliExitCode).toBe(0);
   this.expect(actual).toMatchObject(expected);
 });
 
 Then('I should receive JSON with {string} containing {string}', function (this: RivetBenchWorld, field: string, expectedValue: string) {
-  const actual = JSON.parse(this.cliOutput!.trim());
+  const outputTrimmed = this.cliOutput!.trim();
+  if (!outputTrimmed) {
+    throw new Error('CLI output is empty, cannot parse as JSON');
+  }
+  
+  let actual;
+  try {
+    actual = JSON.parse(outputTrimmed);
+  } catch (error) {
+    throw new Error(`Failed to parse CLI output as JSON: "${outputTrimmed}". Error: ${error instanceof Error ? error.message : String(error)}`);
+  }
   
   this.expect(this.cliExitCode).toBe(0);
   this.expect(actual[field]).toContain(expectedValue);
 });
 
 Then('the {string} field should be {float}', function (this: RivetBenchWorld, field: string, expectedValue: number) {
-  const actual = JSON.parse(this.cliOutput!.trim());
+  const outputTrimmed = this.cliOutput!.trim();
+  if (!outputTrimmed) {
+    throw new Error('CLI output is empty, cannot parse as JSON');
+  }
+  
+  let actual;
+  try {
+    actual = JSON.parse(outputTrimmed);
+  } catch (error) {
+    throw new Error(`Failed to parse CLI output as JSON: "${outputTrimmed}". Error: ${error instanceof Error ? error.message : String(error)}`);
+  }
   
   this.expect(this.cliExitCode).toBe(0);
   this.expect(actual[field]).toBe(expectedValue);
@@ -75,21 +107,46 @@ Then('the {string} field should be {float}', function (this: RivetBenchWorld, fi
 
 Then('I should receive the text {string} without JSON formatting', function (this: RivetBenchWorld, expectedText: string) {
   this.expect(this.cliExitCode).toBe(0);
-  this.expect(this.cliOutput!.trim()).toBe(expectedText);
+  
+  // Strip potential surrounding quotes from output
+  const actualOutput = this.cliOutput!.trim().replace(/^"+|"+$/g, '');
+  this.expect(actualOutput).toBe(expectedText);
 });
 
 Then('I should receive JSON output despite raw flag', function (this: RivetBenchWorld) {
   this.expect(this.cliExitCode).toBe(0);
   
+  const outputTrimmed = this.cliOutput!.trim();
+  if (!outputTrimmed) {
+    throw new Error('CLI output is empty, cannot parse as JSON');
+  }
+  
   // Should be valid JSON (complex object)
-  const parsed = JSON.parse(this.cliOutput!.trim());
+  let parsed;
+  try {
+    parsed = JSON.parse(outputTrimmed);
+  } catch (error) {
+    throw new Error(`Failed to parse CLI output as JSON: "${outputTrimmed}". Error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  
   this.expect(typeof parsed === 'object' && parsed !== null).toBe(true);
   this.expect(Object.keys(parsed).length).toBeGreaterThan(1);
 });
 
-Then('I should receive a validation error', function (this: RivetBenchWorld) {
+Then('I should receive a CLI validation error', function (this: RivetBenchWorld) {
   this.expect(this.cliExitCode).toBe(1);
   
-  const error = JSON.parse(this.cliError!.trim());
+  const errorTrimmed = this.cliError!.trim();
+  if (!errorTrimmed) {
+    throw new Error('CLI error output is empty, expected validation error JSON');
+  }
+  
+  let error;
+  try {
+    error = JSON.parse(errorTrimmed);
+  } catch (parseError) {
+    throw new Error(`Failed to parse CLI error as JSON: "${errorTrimmed}". Error: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+  }
+  
   this.expect(error.error.code).toBe('VALIDATION_ERROR');
 });

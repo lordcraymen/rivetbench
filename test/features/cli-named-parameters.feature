@@ -23,4 +23,4 @@ Feature: CLI Named Parameters
   Scenario: Missing parameter value error
     Given I have the CLI tool available
     When I run "call echo -message"
-    Then I should receive a validation error
+    Then I should receive a CLI validation error

@@ -118,10 +118,10 @@ Then('I should receive a response containing {string}', function (this: RivetBen
 });
 
 /**
- * Step: Then I should receive a validation error
- * Asserts response is a 400 validation error
+ * Step: Then I should receive an endpoint validation error
+ * Asserts response is a 400 validation error from REST API
  */
-Then('I should receive a validation error', function (this: RivetBenchWorld) {
+Then('I should receive an endpoint validation error', function (this: RivetBenchWorld) {
   this.expect(this.response).toBeDefined();
   this.expect(this.response?.statusCode).toBe(400);
   this.expect(this.response?.body).toHaveProperty('error');
