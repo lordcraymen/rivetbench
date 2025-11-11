@@ -12,4 +12,4 @@ Feature: Echo endpoint
   Scenario: Validation failure for empty message
     Given the "echo" endpoint expects a non-empty "message"
     When I call the endpoint with '{ "message": "" }'
-    Then I should receive a validation error
+    Then I should receive an endpoint validation error
