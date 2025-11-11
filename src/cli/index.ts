@@ -1,6 +1,7 @@
 import { EndpointRegistry } from '../core/registry.js';
 import type { ServerConfig } from '../config/index.js';
 import { EndpointNotFoundError, ValidationError, toRivetBenchError } from '../core/errors.js';
+import { randomUUID } from 'node:crypto';
 
 export interface CliIoStreams {
   stdout: NodeJS.WritableStream;
@@ -211,7 +212,7 @@ const handleCall = async (
 
   const result = await endpoint.handler({
     input: parsedInput.data,
-    config: { requestId: crypto.randomUUID() }
+    config: { requestId: randomUUID() }
   });
 
   const parsedOutput = endpoint.output.parse(result);

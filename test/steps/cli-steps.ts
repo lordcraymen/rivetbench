@@ -39,8 +39,60 @@ Given('I have the CLI tool available', function (this: RivetBenchWorld) {
   this.cliStreams = { stdout, stderr };
 });
 
+/**
+ * Parse a command string respecting quoted arguments
+ */
+const parseCommand = (command: string): string[] => {
+  const args: string[] = [];
+  let current = '';
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let escaped = false;
+
+  for (let i = 0; i < command.length; i += 1) {
+    const char = command[i];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+
+    if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+      continue;
+    }
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+      continue;
+    }
+
+    if (char === ' ' && !inSingleQuote && !inDoubleQuote) {
+      if (current) {
+        args.push(current);
+        current = '';
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current) {
+    args.push(current);
+  }
+
+  return args;
+};
+
 When('I run {string}', async function (this: RivetBenchWorld, command: string) {
-  const args = command.split(' ').filter(arg => arg.length > 0);
+  const args = parseCommand(command);
   
   // Clear previous output
   this.cliStreams!.stdout.clear();
