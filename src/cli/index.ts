@@ -20,16 +20,17 @@ ${applicationName} CLI\n\n` +
 `  rivetbench list                           List registered endpoints\n` +
 `  rivetbench call <name> [options]         Invoke an endpoint\n\n` +
 `Input Options (choose one):\n` +
-`  -i, --input <json>                       JSON payload passed to the endpoint\n` +
+`  --params-json <json>                     JSON payload passed to the endpoint\n` +
 `  -<param> <value>                         Named parameters (e.g., -message "hello")\n\n` +
 `Output Options:\n` +
-`  -r, --raw                                Raw output (simple values only, no JSON formatting)\n\n` +
+`  --raw                                    Raw output (simple values only, no JSON formatting)\n\n` +
 `Examples:\n` +
 `  rivetbench call echo -message "Hello!"   # Named parameter, JSON output\n` +
 `  rivetbench call echo -message "Hello!" --raw # Named parameter, raw output\n` +
-`  rivetbench call echo -i '{"message":"Hello!"}' # JSON input\n\n` +
+`  rivetbench call echo --params-json '{"message":"Hello!"}' # JSON input\n\n` +
 `Other Options:\n` +
-`  -h, --help                               Show this help message\n`;
+`  -h, --help                               Show this help message\n\n` +
+`Note: CLI flags use double dashes (--) and endpoint parameters use single dash (-)`;
 
 const writeLine = (stream: NodeJS.WritableStream, message = '') => {
   stream.write(`${message}\n`);
@@ -57,10 +58,13 @@ interface CallCommandArgs {
 /**
  * Parse command line arguments for the call command.
  * Supports two formats:
- * 1. JSON input: --input '{"key": "value"}' or -i '{"key": "value"}'
+ * 1. JSON input: --params-json '{"key": "value"}'
  * 2. Named parameters: -key value -otherKey otherValue
  * Also supports output formatting flags:
- * - --raw or -r: Output raw values instead of JSON (for simple outputs)
+ * - --raw: Output raw values instead of JSON (for simple outputs)
+ * 
+ * CLI flags use double dashes (--) to avoid collision with endpoint parameters
+ * that use single dashes (-).
  */
 const parseCallArgs = (args: string[]): CallCommandArgs => {
   const [endpointName, ...rest] = args;
@@ -70,16 +74,32 @@ const parseCallArgs = (args: string[]): CallCommandArgs => {
   }
 
   let rawOutput = false;
+  let hasParamsJson = false;
 
-  // First pass: check for output formatting flags and remove them
+  // First pass: check for CLI flags and remove them
   const filteredArgs: string[] = [];
   for (let index = 0; index < rest.length; index += 1) {
     const flag = rest[index];
     
-    if (flag === '--raw' || flag === '-r') {
+    if (flag === '--raw') {
       rawOutput = true;
       // Skip this flag, don't add to filteredArgs
       continue;
+    }
+    
+    if (flag === '--params-json') {
+      hasParamsJson = true;
+      filteredArgs.push(flag);
+      continue;
+    }
+
+    // Reject old short flags with helpful error messages
+    if (flag === '-r') {
+      throw new ValidationError('Use --raw instead of -r for raw output flag');
+    }
+    
+    if (flag === '-i' || flag === '--input') {
+      throw new ValidationError('Use --params-json instead of --input or -i for JSON parameter input');
     }
     
     filteredArgs.push(flag);
@@ -89,19 +109,24 @@ const parseCallArgs = (args: string[]): CallCommandArgs => {
   for (let index = 0; index < filteredArgs.length; index += 1) {
     const flag = filteredArgs[index];
 
-    if (flag === '--input' || flag === '-i') {
+    if (flag === '--params-json') {
       const value = filteredArgs[index + 1];
 
       if (!value) {
-        throw new ValidationError('Missing value for input flag', { flag });
+        throw new ValidationError('Missing value for --params-json flag');
       }
 
       try {
         return { endpointName, input: JSON.parse(value), rawOutput };
       } catch (error) {
-        throw new ValidationError('Invalid JSON input', { rawInput: value, cause: String(error) });
+        throw new ValidationError('Invalid JSON input for --params-json', { rawInput: value, cause: String(error) });
       }
     }
+  }
+
+  // Reject mixing --params-json with individual parameters
+  if (hasParamsJson) {
+    throw new ValidationError('Cannot mix --params-json with individual -parameter flags');
   }
 
   // Parse named parameters format
@@ -115,15 +140,20 @@ const parseCallArgs = (args: string[]): CallCommandArgs => {
 
     // Skip if not a parameter flag (doesn't start with -)
     if (!flag.startsWith('-')) {
-      throw new ValidationError('Invalid parameter format. Use -paramName value or --input JSON', { flag });
+      throw new ValidationError('Invalid parameter format. Use -paramName value or --params-json JSON', { flag });
+    }
+
+    // Reject double-dash parameters (reserved for CLI flags)
+    if (flag.startsWith('--')) {
+      throw new ValidationError(`Unknown CLI flag: ${flag}. Endpoint parameters must use single dash: -paramName`);
     }
 
     if (value === undefined) {
       throw new ValidationError('Missing value for parameter', { flag });
     }
 
-    // Remove leading dashes and use as parameter name
-    const paramName = flag.replace(/^-+/, '');
+    // Remove leading dash and use as parameter name
+    const paramName = flag.substring(1);
     
     // Try to parse as number, boolean, or keep as string
     let parsedValue: unknown = value;

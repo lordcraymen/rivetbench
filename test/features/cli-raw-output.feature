@@ -9,9 +9,9 @@ Feature: CLI Raw Output
     When I run "call echo -message 'hello' --raw"
     Then I should receive the text "hello" without JSON formatting
 
-  Scenario: Raw output with short flag
+  Scenario: Raw output with --raw flag (no short form)
     Given I have the CLI tool available
-    When I run "call uppercase -text 'hello world' -r"
+    When I run "call uppercase -text 'hello world' --raw"
     Then I should receive the text "HELLO WORLD" without JSON formatting
 
   Scenario: Complex object falls back to JSON in raw mode
@@ -21,5 +21,5 @@ Feature: CLI Raw Output
 
   Scenario: Raw output with JSON input
     Given I have the CLI tool available
-    When I run "call echo --input '{\"message\":\"test\"}' --raw"
+    When I run "call echo --params-json '{\"message\":\"test\"}' --raw"
     Then I should receive the text "test" without JSON formatting

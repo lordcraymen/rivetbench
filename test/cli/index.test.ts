@@ -41,7 +41,7 @@ describe('CLI', () => {
     const stdout = createMemoryStream();
     const cli = createCli({ registry, config, streams: { stdout: stdout.stream } });
 
-    const exitCode = await cli.run(['call', 'echo', '--input', '{"message":"hi"}']);
+    const exitCode = await cli.run(['call', 'echo', '--params-json', '{"message":"hi"}']);
 
     expect({ exitCode, output: stdout.read().trim() }).toEqual({
       exitCode: 0,
@@ -55,7 +55,7 @@ describe('CLI', () => {
     const stderr = createMemoryStream();
     const cli = createCli({ registry, config, streams: { stderr: stderr.stream } });
 
-    const exitCode = await cli.run(['call', 'echo', '--input', '{"message":""}']);
+    const exitCode = await cli.run(['call', 'echo', '--params-json', '{"message":""}']);
 
     expect({ exitCode, error: JSON.parse(stderr.read()).error.code }).toEqual({
       exitCode: 1,
@@ -153,18 +153,18 @@ describe('CLI', () => {
       });
     });
 
-    it('outputs raw value for simple single-property objects with -r flag', async () => {
+    it('outputs raw value for simple single-property objects (no -r shorthand anymore)', async () => {
       const config = loadConfig();
       const registry = createDefaultRegistry();
       const stdout = createMemoryStream();
-      const cli = createCli({ registry, config, streams: { stdout: stdout.stream } });
+      const stderr = createMemoryStream();
+      const cli = createCli({ registry, config, streams: { stdout: stdout.stream, stderr: stderr.stream } });
 
+      // Test that old -r flag is rejected with helpful error
       const exitCode = await cli.run(['call', 'uppercase', '-text', 'hello world', '-r']);
 
-      expect({ exitCode, output: stdout.read().trim() }).toEqual({
-        exitCode: 0,
-        output: 'HELLO WORLD'
-      });
+      expect(exitCode).toBe(1);
+      expect(stderr.read()).toContain('Use --raw instead of -r');
     });
 
     it('falls back to JSON for complex objects even with --raw flag', async () => {
@@ -188,7 +188,7 @@ describe('CLI', () => {
       const stdout = createMemoryStream();
       const cli = createCli({ registry, config, streams: { stdout: stdout.stream } });
 
-      const exitCode = await cli.run(['call', 'echo', '--input', '{"message":"json test"}', '--raw']);
+      const exitCode = await cli.run(['call', 'echo', '--params-json', '{"message":"json test"}', '--raw']);
 
       expect({ exitCode, output: stdout.read().trim() }).toEqual({
         exitCode: 0,

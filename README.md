@@ -113,8 +113,7 @@ npm run dev:cli -- call complexFunc -config '{"timeout": 30}' -tags '["web", "ap
 
 **JSON Input** (for complex nested objects):
 ```bash
-npm run dev:cli -- call echo --input '{"message": "Hello World"}'
-npm run dev:cli -- call echo -i '{"message": "Hello World"}'  # short form
+npm run dev:cli -- call echo --params-json '{"message": "Hello World"}'
 ```
 
 #### Output Formatting
@@ -130,11 +129,13 @@ npm run dev:cli -- call echo -message "Hello"
 npm run dev:cli -- call echo -message "Hello" --raw
 # Output: Hello
 
-npm run dev:cli -- call uppercase -text "world" -r  # short form
+npm run dev:cli -- call uppercase -text "world" --raw
 # Output: WORLD
 ```
 
 Raw output automatically extracts simple values from single-property objects. Complex objects fall back to JSON formatting even in raw mode.
+
+**Note**: CLI flags use double dashes (`--`) and endpoint parameters use single dash (`-`) to avoid naming collisions.
 
 #### Basic Commands
 

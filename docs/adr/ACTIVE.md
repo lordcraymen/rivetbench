@@ -1,6 +1,6 @@
 # Active Architecture Decisions
 
-Generated at 2025-10-07T20:52:52.213Z
+Generated at 2025-11-11T12:00:00.000Z
 
 | ID | Title | Status | Summary |
 | --- | --- | --- | --- |
@@ -11,3 +11,4 @@ Generated at 2025-10-07T20:52:52.213Z
 | ADR-0005 | ADR-0005: MCP Stdio Logging Constraints | accepted | Restrict all diagnostic output to stderr when running MCP in stdio mode to prevent corruption of JSON-RPC protocol stream on stdout. |
 | ADR-0006 | ADR-0006: Structured Error Handling | accepted | Define custom error classes extending RivetBenchError base class with structured JSON serialization for consistent error responses across REST and MCP transports. |
 | ADR-0007 | ADR-0007: Transport Parity Requirements | accepted | Enforce identical behavior across REST and MCP transports including request ID generation, validation, error handling, and request tracing for consistent client experience. |
+| ADR-0008 | ADR-0008: CLI Flag and Parameter Separation | active | Use double dashes (--) for CLI flags and single dash (-) for endpoint parameters to avoid naming collisions. Rename --input to --params-json for clarity. |

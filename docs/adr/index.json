@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2025-10-07T20:52:52.213Z",
-  "total": 7,
+  "generatedAt": "2025-11-11T12:00:00.000Z",
+  "total": 8,
   "adrs": [
     {
       "id": "ADR-0001",
@@ -131,6 +131,25 @@
         "test/features/"
       ],
       "path": "docs/adr/ADR-0007-transport-parity-requirements.md"
+    },
+    {
+      "id": "ADR-0008",
+      "title": "ADR-0008: CLI Flag and Parameter Separation",
+      "status": "active",
+      "summary": "Use double dashes (--) for CLI flags and single dash (-) for endpoint parameters to avoid naming collisions. Rename --input to --params-json for clarity.",
+      "date": "2025-11-11",
+      "tags": [
+        "cli",
+        "flags",
+        "parameters",
+        "collision-avoidance"
+      ],
+      "modules": [
+        "src/cli/",
+        "test/cli/",
+        "test/features/"
+      ],
+      "path": "docs/adr/ADR-0008-cli-flag-parameter-separation.md"
     }
   ]
 }
