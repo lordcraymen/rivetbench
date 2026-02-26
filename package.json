@@ -17,7 +17,7 @@
     }
   },
   "bin": {
-    "rivetbench": "./dist/cli/index.js"
+    "rivetbench": "./dist/bin/rivetbench.js"
   },
   "files": [
     "dist",
