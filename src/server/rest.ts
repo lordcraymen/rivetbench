@@ -17,7 +17,7 @@ export const createRestServer = async ({ registry, config }: RestServerOptions) 
   const logger = createLogger(config);
 
   const fastify = Fastify({
-    logger,
+    loggerInstance: logger,
     genReqId: () => crypto.randomUUID(),
     requestIdHeader: 'x-request-id',
     requestIdLogLabel: 'reqId'
