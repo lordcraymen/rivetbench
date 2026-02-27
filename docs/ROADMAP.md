@@ -4,8 +4,8 @@ This document outlines the next steps for implementing features and improvements
 
 ## Current Status
 
-**Version**: 0.2.0 - Testing & CLI Complete  
-**Date**: November 2025
+**Version**: 0.1.0  
+**Date**: February 2026
 
 ### What's Working
 
@@ -20,7 +20,7 @@ This document outlines the next steps for implementing features and improvements
 ✅ **CI/CD**: GitHub Actions with Node 20.x and 22.x  
 ✅ **Quality**: Pre-commit hooks, linting, type checking
 
-## Completed Features (Version 0.2.0)
+## Completed Features (Version 0.1.0)
 
 ### ✅ **CLI Tool Implementation**
 **Status**: ✅ **COMPLETE**  
@@ -52,7 +52,9 @@ This document outlines the next steps for implementing features and improvements
 - [x] MCP error handling with FastMCP logger
 - [x] Comprehensive test coverage
 
----## Next: Version 0.3.0 - Production Ready
+---
+
+## Next: Version 0.2.0 - Production Ready
 
 ### 1. Request ID Parity (Priority: HIGH)
 **Status**: � In Progress  
@@ -88,7 +90,7 @@ Production-ready features:
 
 ---
 
-## Future: Version 0.4.0+ - Extensions
+## Future: Version 0.3.0+ - Extensions
 
 ### Developer Experience
 **Status**: 💭 Planned
@@ -137,24 +139,8 @@ See `agent.md` for detailed workflow guidance.
 
 ## Version History
 
-### Version 0.2.0 (November 2025) - Testing & CLI Complete
-**Highlights**: Complete BDD testing framework and CLI tool
-
-**Added**:
-- Complete Cucumber step definitions for all feature files
-- CLI tool with named parameters and JSON input support
-- Integration tests with real server instances
-- Raw output mode for CLI (`--raw`)
-- Cross-transport consistency testing
-- BDD tagging workflow (`@implemented`, `@wip`)
-
-**Enhanced**:
-- Test coverage expanded significantly
-- Documentation for testing approach
-- CI pipeline includes BDD tests
-
-### Version 0.1.0 (October 2025) - MCP Implementation
-**Highlights**: Complete dual-exposure framework (REST + MCP)
+### Version 0.1.0 (February 2026) - Initial Release
+**Highlights**: Complete dual-exposure framework (REST + MCP) with CLI and BDD testing
 
 **Added**:
 - Core endpoint system with Zod schemas
@@ -163,15 +149,18 @@ See `agent.md` for detailed workflow guidance.
 - OpenAPI 3 generation
 - Custom error classes and structured logging
 - Request ID tracking through pipeline
-- Comprehensive test suite
-- CI/CD pipeline with GitHub Actions
+- CLI tool with named parameters, JSON input, and raw output mode
+- Complete Cucumber/BDD step definitions for all transports
+- Integration tests with real server instances
+- Comprehensive unit + integration test suite
+- CI/CD pipeline with GitHub Actions (Node 20.x + 22.x)
 - Pre-commit hooks and quality checks
 
 **Documentation**:
 - Complete MCP implementation guide
 - Contributing guidelines
-- Branch protection setup
-- Development workflow
+- Architecture decision records (ADRs)
+- Testing guide and BDD workflow
 
 ---
 
