@@ -1,6 +1,6 @@
 # RivetBench
 
-**RivetBench** is a lightweight TypeScript framework for building **dual‑exposed endpoints** that work over both **REST** and **MCP (Model Context Protocol)**, with **OpenAPI 3** documentation generated automatically.
+**RivetBench** is a lightweight TypeScript framework for building **triple‑exposed endpoints** that work over **REST**, **MCP (Model Context Protocol)**, and a **runtime‑generated CLI** — with **OpenAPI 3** documentation generated automatically.
 
 Write an endpoint once — expose it everywhere.
 
@@ -9,10 +9,14 @@ Write an endpoint once — expose it everywhere.
 ## Features
 
 * Unified endpoint definitions with **Zod** schemas for validation and typing
+* **Three transports from one definition**: REST routes, MCP tools, and CLI commands
 * **RPC over REST**: POST-only routes that dispatch by endpoint name (no resource modeling)
-* Automatic generation of **REST routes**, **MCP tools**, and **OpenAPI 3** specs
-* Built‑in **Swagger UI** for exploration and testing
-* Type‑safe handlers shared between REST and MCP
+* **Runtime‑generated CLI** with named parameters, JSON input, and raw/JSON output modes
+* Automatic generation of **OpenAPI 3** specs and built‑in **Swagger UI**
+* **Dynamic tool notifications**: signal clients when the tool list changes at runtime
+* **Tool enrichers**: transform the tool list per‑request based on session, transport, or app logic
+* **REST ETag support**: conditional requests (`If-None-Match`) on the tool listing endpoint
+* Type‑safe handlers shared across all transports
 * **Production-ready error handling** with custom error classes and consistent responses
 * **Structured logging** with Pino (MCP stdio-compatible)
 
@@ -150,6 +154,38 @@ npm run dev:cli            # Also shows help when no command provided
 
 ---
 
+## Dynamic Tool Notifications
+
+When your tool list changes at runtime (feature flags, RBAC, database‑driven endpoints), RivetBench can signal connected clients:
+
+```ts
+// Signal all transports that the tool list has changed
+registry.signalToolsChanged();
+```
+
+| Transport | Notification mechanism |
+|-----------|------------------------|
+| **MCP**   | `notifications/tools/list_changed` sent to all active sessions automatically |
+| **REST**  | `GET /tools` returns an `ETag`; clients use `If-None-Match` for cache validation |
+| **CLI**   | Each invocation always sees the current tool list (no persistent session needed) |
+
+### Tool Enrichers
+
+Optionally transform the tool list before serving — filter, annotate, or rewrite based on per‑request context:
+
+```ts
+registry.setToolEnricher((tools, context) => {
+  // context.transportType is 'rest' | 'mcp' | 'cli'
+  // context.sessionId is available for MCP/REST
+  if (context.transportType === 'rest') {
+    return tools.filter(t => !t.name.startsWith('internal-'));
+  }
+  return tools;
+});
+```
+
+---
+
 ## RPC‑over‑REST semantics
 
 * **POST‑only**: Each call is `POST /rpc/:name` (default) or `POST /tools/:name`.
@@ -173,6 +209,20 @@ npm run dev:cli            # Also shows help when no command provided
 - **[BDD Testing Guide](docs/BDD_TESTING.md)** - Cucumber/BDD testing documentation and examples
 - **[Contributing](CONTRIBUTING.md)** - Development workflow, branch strategy, and contribution guidelines
 - **[Roadmap](ROADMAP.md)** - Feature plans and development priorities
+
+---
+
+## Transports at a Glance
+
+| Capability | REST | MCP | CLI |
+|---|---|---|---|
+| Input validation (Zod) | Yes | Yes | Yes |
+| Output validation (Zod) | Yes | Yes | Yes |
+| Request ID tracing | Yes | Yes | Yes |
+| Error handling | Structured JSON | Structured JSON | Stderr + exit code |
+| Tool discovery | `GET /tools`, OpenAPI | `tools/list` | `rivetbench list` |
+| Change notification | ETag / `If-None-Match` | `notifications/tools/list_changed` | N/A (stateless) |
+| Tool enricher | Yes | Yes | Yes |
 
 ---
 
