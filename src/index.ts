@@ -38,6 +38,9 @@ export {
 export {
   type EndpointRegistry,
   InMemoryEndpointRegistry,
+  type ToolEnricher,
+  type ToolEnricherContext,
+  type ToolsChangedListener,
 } from './core/registry.js';
 
 export {

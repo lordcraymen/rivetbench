@@ -100,6 +100,19 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
     } : {})
   });
 
+  // Subscribe to tool-list changes and forward as MCP notifications.
+  // Each active session receives `notifications/tools/list_changed` so
+  // clients know to re-fetch the tool catalogue.
+  registry.onToolsChanged(() => {
+    for (const session of mcp.sessions) {
+      session.server.sendToolListChanged().catch((err: unknown) => {
+        // Best-effort: session may have disconnected.
+        // eslint-disable-next-line no-console
+        console.error('Failed to send tools/list_changed notification', err);
+      });
+    }
+  });
+
   // eslint-disable-next-line no-console
   console.error(`MCP server started with ${transportType} transport`);
   // eslint-disable-next-line no-console

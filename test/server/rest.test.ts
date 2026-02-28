@@ -10,13 +10,14 @@ describe('REST Server Integration', () => {
   let server: Awaited<ReturnType<typeof createRestServer>>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let fastify: FastifyInstance<any, any, any, any>;
+  let registry: InMemoryEndpointRegistry;
   
   beforeAll(async () => {
     // Load configuration once for deterministic testing
     const config = loadConfig();
     
     // Create a test registry with the echo endpoint
-    const registry = new InMemoryEndpointRegistry();
+    registry = new InMemoryEndpointRegistry();
     registry.register(makeEndpoint({
       name: 'echo',
       summary: 'Echo endpoint',
@@ -157,6 +158,93 @@ describe('REST Server Integration', () => {
       expect(responseSchema).toBeDefined();
       expect(responseSchema.type).toBe('object');
       expect(responseSchema.properties).toHaveProperty('echoed');
+    });
+  });
+
+  describe('Tool Listing Endpoint', () => {
+    it('should return the list of registered tools', async () => {
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/tools'
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body).toHaveLength(1);
+      expect(body[0]).toEqual({
+        name: 'echo',
+        summary: 'Echo endpoint',
+        description: 'Echoes back the message'
+      });
+    });
+
+    it('should include an ETag header', async () => {
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/tools'
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['etag']).toBeDefined();
+      expect(response.headers['etag']).toMatch(/^"[a-f0-9]+"$/);
+    });
+
+    it('should include Cache-Control: no-cache header', async () => {
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/tools'
+      });
+
+      expect(response.headers['cache-control']).toBe('no-cache');
+    });
+
+    it('should return 304 when If-None-Match matches current ETag', async () => {
+      const first = await fastify.inject({ method: 'GET', url: '/tools' });
+      const etag = first.headers['etag'] as string;
+
+      const second = await fastify.inject({
+        method: 'GET',
+        url: '/tools',
+        headers: { 'if-none-match': etag }
+      });
+
+      expect(second.statusCode).toBe(304);
+    });
+
+    it('should return 200 when If-None-Match does not match', async () => {
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/tools',
+        headers: { 'if-none-match': '"stale-etag"' }
+      });
+
+      expect(response.statusCode).toBe(200);
+    });
+
+    it('should return a new ETag after signalToolsChanged', async () => {
+      const before = await fastify.inject({ method: 'GET', url: '/tools' });
+      const etagBefore = before.headers['etag'];
+
+      registry.signalToolsChanged();
+
+      const after = await fastify.inject({ method: 'GET', url: '/tools' });
+      const etagAfter = after.headers['etag'];
+
+      expect(etagBefore).not.toBe(etagAfter);
+    });
+
+    it('should apply tool enricher to the listing', async () => {
+      registry.setToolEnricher((tools) =>
+        tools.map(t => ({ ...t, description: `enriched: ${t.description}` }))
+      );
+
+      const response = await fastify.inject({ method: 'GET', url: '/tools' });
+      const body = response.json();
+
+      expect(body[0].description).toContain('enriched:');
+
+      // Clean up enricher so other tests are unaffected
+      registry.setToolEnricher(undefined);
     });
   });
 });

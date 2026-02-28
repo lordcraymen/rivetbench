@@ -338,6 +338,36 @@ Use this template when adding new lessons:
 
 ---
 
+### Dynamic Tool List Notifications (February 2026)
+
+**Problem**: MCP servers had no way to signal clients when available tools change at runtime (e.g. feature flags, RBAC policies).
+
+**Solution**: Extended `EndpointRegistry` with three capabilities:
+1. `signalToolsChanged()` – bumps version, fires listeners, MCP sessions send `notifications/tools/list_changed`
+2. `setToolEnricher(fn)` – optional hook to transform the tool list per-request (filter, annotate) with context (sessionId, transportType)
+3. REST `GET /tools` with `ETag` / `If-None-Match` for HTTP cache validation
+
+**Pattern**:
+```typescript
+// Signal after runtime change
+registry.signalToolsChanged();
+
+// Optional enricher — keeps domain logic outside framework
+registry.setToolEnricher((tools, ctx) => {
+  if (ctx.transportType === 'rest') return tools.filter(t => !t.name.startsWith('internal-'));
+  return tools;
+});
+```
+
+**Rationale**:
+- Framework stays generic – enrichment logic belongs in the application layer
+- Listener pattern (callback Set + unsubscribe) avoids tight coupling to specific transports
+- ETag computed from SHA-256 of version + names + descriptions; invalidated on register/signal
+
+**Review**: When MCP enrichment per-session is needed, consider overriding the SDK `tools/list` handler on `session.server`.
+
+---
+
 ## Maintenance Checklist
 
 After each feature/refactor:

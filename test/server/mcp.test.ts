@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { z } from 'zod';
 import { InMemoryEndpointRegistry } from '../../src/core/registry.js';
 import { makeEndpoint } from '../../src/core/endpoint.js';
@@ -172,6 +172,45 @@ describe('MCP Server', () => {
       expect(validation.success).toBe(true);
       expect(result).toHaveProperty('result');
       expect(result).toHaveProperty('timestamp');
+    });
+  });
+
+  describe('Tool-list change notifications', () => {
+    it('should notify all MCP sessions when signalToolsChanged is called', () => {
+      const sendToolListChanged1 = vi.fn().mockResolvedValue(undefined);
+      const sendToolListChanged2 = vi.fn().mockResolvedValue(undefined);
+
+      // Simulate two FastMCP sessions with underlying MCP SDK servers.
+      const fakeMcp = {
+        sessions: [
+          { server: { sendToolListChanged: sendToolListChanged1 } },
+          { server: { sendToolListChanged: sendToolListChanged2 } },
+        ],
+      };
+
+      // Wire registry listener exactly as the real MCP server does.
+      registry.onToolsChanged(() => {
+        for (const session of fakeMcp.sessions) {
+          session.server.sendToolListChanged();
+        }
+      });
+
+      registry.signalToolsChanged();
+
+      expect(sendToolListChanged1).toHaveBeenCalledOnce();
+      expect(sendToolListChanged2).toHaveBeenCalledOnce();
+    });
+
+    it('should not fail when there are no active sessions', () => {
+      const fakeMcp = { sessions: [] as unknown[] };
+
+      registry.onToolsChanged(() => {
+        for (const session of fakeMcp.sessions as Array<{ server: { sendToolListChanged: () => Promise<void> } }>) {
+          session.server.sendToolListChanged();
+        }
+      });
+
+      expect(() => registry.signalToolsChanged()).not.toThrow();
     });
   });
 });

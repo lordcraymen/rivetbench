@@ -54,6 +54,36 @@ export const createRestServer = async ({ registry, config }: RestServerOptions) 
 
   fastify.get('/health', async () => ({ status: 'ok' }));
 
+  /**
+   * Tool listing endpoint with ETag / If-None-Match cache validation.
+   * Returns the (optionally enriched) list of registered endpoints.
+   */
+  fastify.get('/tools', async (request, reply) => {
+    const currentEtag = registry.etag;
+
+    // Conditional request: return 304 when client's cached version matches.
+    const ifNoneMatch = request.headers['if-none-match'];
+    if (ifNoneMatch && ifNoneMatch === currentEtag) {
+      return reply.status(304).send();
+    }
+
+    const enriched = registry.listEnriched({
+      sessionId: request.id,
+      transportType: 'rest',
+    });
+
+    const tools = enriched.map(e => ({
+      name: e.name,
+      summary: e.summary,
+      description: e.description,
+    }));
+
+    return reply
+      .header('ETag', currentEtag)
+      .header('Cache-Control', 'no-cache')
+      .send(tools);
+  });
+
   fastify.post('/rpc/:name', async (request) => {
     const endpointName = (request.params as { name: string }).name;
     const endpoint = registry.get(endpointName);
