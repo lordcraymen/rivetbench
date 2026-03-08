@@ -33,6 +33,7 @@ export {
   type EndpointContext,
   type EndpointHandler,
   type EndpointRuntimeConfig,
+  type ContextFactory,
 } from './core/endpoint.js';
 
 export {
@@ -61,7 +62,7 @@ export {
 } from './core/openapi.js';
 
 // Config
-export { loadConfig, type ServerConfig } from './config/index.js';
+export { loadConfig, type ServerConfig, type DeepPartial } from './config/index.js';
 
 // Servers
 export { createRestServer, type RestServerOptions } from './server/rest.js';

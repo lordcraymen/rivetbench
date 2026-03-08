@@ -16,6 +16,28 @@ This document captures architectural decisions, refactoring insights, and evolvi
 
 ## Architecture Decisions
 
+### 0. Programmatic Config Overrides & Custom Handler Context (March 2026)
+
+**Problem (Config)**: `loadConfig()` only read env vars. Library consumers embedding RivetBench had to mutate env vars or post-hoc patch the config object.
+
+**Solution**: Added an optional `DeepPartial<ServerConfig>` parameter to `loadConfig()`. A pure `deepMerge` function merges overrides on top of env-var defaults; overrides win.
+
+**Problem (Context/DI)**: `EndpointContext` only provided `{ input, config }`. Consumers needing to inject custom dependencies (DB pools, WebSocket relays, auth state) were forced into module-level singletons.
+
+**Solution**: Added a generic `TCtx` type parameter (default `undefined`) to `EndpointContext`, `EndpointHandler`, and `EndpointDefinition`. A `ContextFactory<TCtx>` can be registered on the registry via `setContextFactory()`. All three transports (REST, MCP, CLI) call `registry.createContext()` on every request and pass the result as `ctx` to the handler. Endpoints that don't need custom context are fully backward-compatible — `ctx` defaults to `undefined`.
+
+**Key design decisions**:
+- `deepMerge` ignores `undefined` values in overrides so callers can provide sparse partial objects
+- `TCtx` defaults to `undefined` (not `object`) to preserve exact backward compatibility — no existing code needs changes
+- Context factory lives on the registry (not the server) so all transports share the same factory
+- Factory is called per-request to allow stateful contexts (e.g., fresh DB transactions)
+
+**Guardrail Updates**:
+- No changes to `AGENTS.MD` — existing DI and config patterns still apply
+- README updated with usage examples for both features
+
+---
+
 ### 1. Dependency Injection Pattern (October 2025)
 
 **Problem**: Multiple `loadConfig()` calls caused configuration drift, race conditions, and untestable code.

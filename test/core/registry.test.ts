@@ -275,4 +275,35 @@ describe('InMemoryEndpointRegistry', () => {
       expect(listenerB).toHaveBeenCalledOnce();
     });
   });
+
+  describe('setContextFactory / createContext', () => {
+    it('should return undefined when no factory is set', () => {
+      expect(registry.createContext()).toBeUndefined();
+    });
+
+    it('should return the value produced by the factory', () => {
+      const ctx = { db: 'mock-pool', relay: 'mock-relay' };
+      registry.setContextFactory(() => ctx);
+
+      expect(registry.createContext()).toBe(ctx);
+    });
+
+    it('should call the factory on every createContext invocation', () => {
+      const factory = vi.fn(() => ({ counter: 1 }));
+      registry.setContextFactory(factory);
+
+      registry.createContext();
+      registry.createContext();
+
+      expect(factory).toHaveBeenCalledTimes(2);
+    });
+
+    it('should clear the factory when undefined is passed', () => {
+      registry.setContextFactory(() => ({ db: 'pool' }));
+      expect(registry.createContext()).toEqual({ db: 'pool' });
+
+      registry.setContextFactory(undefined);
+      expect(registry.createContext()).toBeUndefined();
+    });
+  });
 });

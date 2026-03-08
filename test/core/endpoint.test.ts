@@ -38,9 +38,59 @@ describe('makeEndpoint', () => {
     
     const result = await endpoint.handler({
       input: { message: 'hello' },
-      config: {}
+      config: {},
+      ctx: undefined,
     });
     
     expect(result).toEqual({ echoed: 'hello' });
+  });
+
+  it('should support a typed custom context via the ctx parameter', async () => {
+    interface AppCtx { greetPrefix: string }
+
+    const Input = z.object({ name: z.string() });
+    const Output = z.object({ greeting: z.string() });
+
+    const endpoint = makeEndpoint<typeof Input, typeof Output, AppCtx>({
+      name: 'greet',
+      summary: 'Greet with prefix',
+      input: Input,
+      output: Output,
+      handler: async ({ input, ctx }) => ({
+        greeting: `${ctx.greetPrefix} ${input.name}`,
+      }),
+    });
+
+    const result = await endpoint.handler({
+      input: { name: 'World' },
+      config: {},
+      ctx: { greetPrefix: 'Hello,' },
+    });
+
+    expect(result).toEqual({ greeting: 'Hello, World' });
+  });
+
+  it('should default ctx to undefined for backward compatibility', async () => {
+    const Input = z.object({});
+    const Output = z.object({ ok: z.boolean() });
+
+    const endpoint = makeEndpoint({
+      name: 'compat',
+      summary: 'Backward compatible',
+      input: Input,
+      output: Output,
+      handler: async ({ ctx }) => {
+        // ctx should be undefined when no custom context is provided
+        return { ok: ctx === undefined };
+      },
+    });
+
+    const result = await endpoint.handler({
+      input: {},
+      config: {},
+      ctx: undefined,
+    });
+
+    expect(result).toEqual({ ok: true });
   });
 });

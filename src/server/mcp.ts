@@ -45,7 +45,8 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
           // Execute the endpoint handler with request ID for observability
           const result = await endpoint.handler({
             input: parsedInput.data,
-            config: { requestId }
+            config: { requestId },
+            ctx: registry.createContext(),
           });
           
           // Validate output

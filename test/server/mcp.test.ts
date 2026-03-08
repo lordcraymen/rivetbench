@@ -107,7 +107,8 @@ describe('MCP Server', () => {
 
       const result = await endpoint.handler({
         input: { a: 5, b: 3 },
-        config: {}
+        config: {},
+        ctx: undefined,
       });
 
       expect(result).toEqual({ sum: 8 });
@@ -164,7 +165,8 @@ describe('MCP Server', () => {
 
       const result = await endpoint.handler({
         input: { value: 'test' },
-        config: {}
+        config: {},
+        ctx: undefined,
       });
 
       // Output should match schema

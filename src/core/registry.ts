@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { AnyEndpointDefinition } from './endpoint.js';
+import { AnyEndpointDefinition, ContextFactory } from './endpoint.js';
 
 /**
  * Context passed to tool enricher functions for per-request customization.
@@ -69,6 +69,30 @@ export interface EndpointRegistry {
    */
   onToolsChanged(listener: ToolsChangedListener): () => void;
 
+  /**
+   * Set a factory function that produces custom context for every handler
+   * invocation. The context object is passed as `ctx` in {@link EndpointContext}.
+   *
+   * @param factory - A function that returns the custom context object, or
+   *   `undefined` to clear any previously set factory.
+   *
+   * @example
+   * ```typescript
+   * registry.setContextFactory(() => ({
+   *   db: dbPool,
+   *   relay: relayInstance,
+   * }));
+   * ```
+   */
+  setContextFactory(factory: ContextFactory<unknown> | undefined): void;
+
+  /**
+   * Create the custom context for a handler invocation by calling the
+   * registered {@link ContextFactory}. Returns `undefined` when no factory
+   * is set.
+   */
+  createContext(): unknown;
+
   /** Current ETag (content-hash) for the tool list. */
   get etag(): string;
 
@@ -80,6 +104,7 @@ export class InMemoryEndpointRegistry implements EndpointRegistry {
   private readonly endpoints = new Map<string, AnyEndpointDefinition>();
   private readonly listeners = new Set<ToolsChangedListener>();
   private enricher: ToolEnricher | undefined;
+  private contextFactory: ContextFactory<unknown> | undefined;
   private internalVersion = 0;
   private cachedEtag: string | undefined;
 
@@ -118,6 +143,17 @@ export class InMemoryEndpointRegistry implements EndpointRegistry {
       return tools;
     }
     return this.enricher(tools, context);
+  }
+
+  setContextFactory(factory: ContextFactory<unknown> | undefined): void {
+    this.contextFactory = factory;
+  }
+
+  createContext(): unknown {
+    if (!this.contextFactory) {
+      return undefined;
+    }
+    return this.contextFactory();
   }
 
   onToolsChanged(listener: ToolsChangedListener): () => void {

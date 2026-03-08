@@ -102,7 +102,8 @@ export const createRestServer = async ({ registry, config }: RestServerOptions) 
 
     const result = await endpoint.handler({
       input: parsedInput.data,
-      config: { requestId: request.id }
+      config: { requestId: request.id },
+      ctx: registry.createContext(),
     });
 
     return endpoint.output.parse(result);

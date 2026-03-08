@@ -7,7 +7,7 @@ describe('MyFunc Endpoint', () => {
     const input = { text: 'hello', number: 5 };
     const config = { requestId: 'test-123' };
     
-    const result = await myFuncEndpoint.handler({ input, config });
+    const result = await myFuncEndpoint.handler({ input, config, ctx: undefined });
     
     expect(result).toEqual({
       result: 'Processed: hello',
@@ -20,7 +20,7 @@ describe('MyFunc Endpoint', () => {
     const input = { text: 'test', number: 3.14 };
     const config = { requestId: 'test-123' };
     
-    const result = await myFuncEndpoint.handler({ input, config });
+    const result = await myFuncEndpoint.handler({ input, config, ctx: undefined });
     
     expect(result).toEqual({
       result: 'Processed: test',
@@ -53,7 +53,7 @@ describe('Uppercase Endpoint', () => {
     const input = { text: 'hello world' };
     const config = { requestId: 'test-123' };
     
-    const result = await uppercaseEndpoint.handler({ input, config });
+    const result = await uppercaseEndpoint.handler({ input, config, ctx: undefined });
     
     expect(result).toEqual({
       result: 'HELLO WORLD'
@@ -64,7 +64,7 @@ describe('Uppercase Endpoint', () => {
     const input = { text: '' };
     const config = { requestId: 'test-123' };
     
-    const result = await uppercaseEndpoint.handler({ input, config });
+    const result = await uppercaseEndpoint.handler({ input, config, ctx: undefined });
     
     expect(result).toEqual({
       result: ''
@@ -75,7 +75,7 @@ describe('Uppercase Endpoint', () => {
     const input = { text: 'hello123!@#' };
     const config = { requestId: 'test-123' };
     
-    const result = await uppercaseEndpoint.handler({ input, config });
+    const result = await uppercaseEndpoint.handler({ input, config, ctx: undefined });
     
     expect(result).toEqual({
       result: 'HELLO123!@#'

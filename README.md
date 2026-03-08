@@ -186,6 +186,68 @@ registry.setToolEnricher((tools, context) => {
 
 ---
 
+## Programmatic Config Overrides
+
+`loadConfig()` accepts an optional `DeepPartial<ServerConfig>` that is deep-merged on top of the env-var defaults. Overrides always win:
+
+```ts
+import { loadConfig } from '@lordcraymen/rivetbench';
+
+// Default: reads env vars only
+const cfg1 = loadConfig();
+
+// Override application name and MCP transport — everything else stays default
+const cfg2 = loadConfig({
+  application: { name: 'my-app' },
+  mcp: { transport: 'stdio' },
+});
+```
+
+This is especially useful when embedding RivetBench as a library dependency, where env-var mutation is undesirable.
+
+---
+
+## Custom Handler Context (Dependency Injection)
+
+Endpoints can receive a typed custom context object via the `ctx` field in &ZeroWidthSpace;`EndpointContext`. Register a context factory on the registry and all transports (REST, MCP, CLI) will call it automatically on every request:
+
+```ts
+import { z } from 'zod';
+import { makeEndpoint, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+
+// 1. Define your context type
+interface AppCtx {
+  db: DatabasePool;
+  relay: RelayService;
+}
+
+// 2. Use it in endpoint definitions
+const getState = makeEndpoint<
+  typeof StateInput,
+  typeof StateOutput,
+  AppCtx
+>({
+  name: 'getState',
+  summary: 'Get current state',
+  input: StateInput,
+  output: StateOutput,
+  handler: async ({ input, ctx }) => ctx.relay.dispatch('getState'),
+  //                       ^^^ fully typed as AppCtx
+});
+
+// 3. Wire up the factory at registry level
+const registry = new InMemoryEndpointRegistry();
+registry.register(getState);
+registry.setContextFactory(() => ({
+  db: dbPool,
+  relay: relayInstance,
+}));
+```
+
+Endpoints that don't need custom context work exactly as before — `ctx` defaults to `undefined` and can be ignored.
+
+---
+
 ## RPC‑over‑REST semantics
 
 * **POST‑only**: Each call is `POST /rpc/:name` (default) or `POST /tools/:name`.

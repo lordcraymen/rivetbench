@@ -125,7 +125,8 @@ describe('Request ID Parity Across Transports', () => {
       const testRequestId = crypto.randomUUID();
       const result = await endpoint!.handler({
         input: { test: 'value' },
-        config: { requestId: testRequestId }
+        config: { requestId: testRequestId },
+        ctx: undefined,
       });
       
       // Verify request ID was captured

@@ -31,7 +31,7 @@ This document outlines the development history and next steps for the RivetBench
 > **Background**: See [AGENT_FEEDBACK.md](AGENT_FEEDBACK.md) for the original unedited feedback that motivated these features.
 
 ### 1. Programmatic Config Overrides (Priority: P0)
-**Status**: 🔴 Not Started  
+**Status**: � Complete  
 **Effort**: Small
 
 `loadConfig()` currently only reads env vars. Library consumers need programmatic overrides:
@@ -54,7 +54,7 @@ Tasks:
 - [ ] Update JSDoc and README
 
 ### 2. Custom Handler Context / Dependency Injection (Priority: P0)
-**Status**: 🔴 Not Started  
+**Status**: � Complete  
 **Effort**: Medium
 
 `EndpointContext` currently provides only `{ input, config }`. Consumers who need to inject custom dependencies (DB connections, WebSocket relays, auth state) are forced into module-level singletons:

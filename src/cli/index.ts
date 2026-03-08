@@ -242,7 +242,8 @@ const handleCall = async (
 
   const result = await endpoint.handler({
     input: parsedInput.data,
-    config: { requestId: randomUUID() }
+    config: { requestId: randomUUID() },
+    ctx: registry.createContext(),
   });
 
   const parsedOutput = endpoint.output.parse(result);
