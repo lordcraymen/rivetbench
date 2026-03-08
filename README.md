@@ -365,9 +365,29 @@ await server.start();
 **Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
 **Returns:** `{ fastify: FastifyInstance; start(): Promise<FastifyInstance> }`
 
-### `startMcpServer(options): Promise<FastMCP>`
+### `createMcpServer(options): McpServerHandle`
 
-Starts an MCP server exposing all registered endpoints as MCP tools:
+Creates an MCP server **without** starting it. Use this when you need explicit lifecycle control (graceful shutdown, testing, restart):
+
+```ts
+import { createMcpServer, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+
+const config = loadConfig({ mcp: { transport: 'stdio' } });
+const registry = new InMemoryEndpointRegistry();
+registry.register(greet);
+
+const handle = createMcpServer({ registry, config });
+await handle.start();
+// later…
+await handle.stop();
+```
+
+**Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
+**Returns:** `McpServerHandle` — `{ start(): Promise<void>; stop(): Promise<void>; server: FastMCP }`
+
+### `startMcpServer(options): Promise<McpServerHandle>`
+
+Convenience wrapper that creates **and starts** the MCP server in one call:
 
 ```ts
 import { startMcpServer, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
@@ -376,11 +396,12 @@ const config = loadConfig({ mcp: { transport: 'stdio' } });
 const registry = new InMemoryEndpointRegistry();
 registry.register(greet);
 
-const mcp = await startMcpServer({ registry, config });
+const handle = await startMcpServer({ registry, config });
+// handle.stop() is available for graceful shutdown
 ```
 
 **Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
-**Returns:** `FastMCP` instance
+**Returns:** `McpServerHandle`
 
 ### Complete Programmatic Embedding Example
 
@@ -437,6 +458,17 @@ import { makeEndpoint, type EndpointDefinition } from '@lordcraymen/rivetbench/c
 **Included in `core`:** `makeEndpoint`, `EndpointDefinition`, `EndpointContext`, `EndpointHandler`, `AnyEndpointDefinition`, `EndpointRuntimeConfig`, `ContextFactory`, `EndpointRegistry`, `InMemoryEndpointRegistry`, `ToolEnricher`, `ToolEnricherContext`, `ToolsChangedListener`, and all error classes (`RivetBenchError`, `ValidationError`, `EndpointNotFoundError`, `InternalServerError`, `ConfigurationError`, `isRivetBenchError`, `toRivetBenchError`).
 
 **NOT in `core`:** `createRestServer`, `startMcpServer`, `loadConfig`, `createLogger`, `createCli`.
+
+### MCP Tool Naming Guidance
+
+Use **lowercase alphanumeric** names with **hyphens** or **underscores** for endpoints:
+
+```
+✅  get-user, send_email, calculate-tax
+❌  graph.getState, GetUser, my tool
+```
+
+Dots in MCP tool names are handled inconsistently by some clients. `makeEndpoint` will emit a warning to stderr when a name doesn't follow the recommended pattern (`/^[a-z0-9][a-z0-9_-]*$/`). See the [MCP Guide](docs/MCP_GUIDE.md) for details.
 
 ---
 

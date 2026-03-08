@@ -215,4 +215,39 @@ describe('MCP Server', () => {
       expect(() => registry.signalToolsChanged()).not.toThrow();
     });
   });
+
+  describe('createMcpServer lifecycle handle', () => {
+    it('should return a handle with start, stop, and server', async () => {
+      const { createMcpServer } = await import('../../src/server/mcp.js');
+      const config = (await import('../../src/config/index.js')).loadConfig({
+        mcp: { transport: 'stdio' },
+      });
+
+      const handle = createMcpServer({ registry, config });
+
+      expect(handle).toHaveProperty('start');
+      expect(handle).toHaveProperty('stop');
+      expect(handle).toHaveProperty('server');
+      expect(typeof handle.start).toBe('function');
+      expect(typeof handle.stop).toBe('function');
+    });
+
+    it('should expose the underlying FastMCP instance via server', async () => {
+      const { createMcpServer } = await import('../../src/server/mcp.js');
+      const config = (await import('../../src/config/index.js')).loadConfig({
+        mcp: { transport: 'stdio' },
+      });
+
+      registry.register(makeEndpoint({
+        name: 'lifecycle-test',
+        summary: 'Test endpoint for lifecycle',
+        input: z.object({ v: z.string() }),
+        output: z.object({ v: z.string() }),
+        handler: async ({ input }) => ({ v: input.v }),
+      }));
+
+      const handle = createMcpServer({ registry, config });
+      expect(handle.server).toBeDefined();
+    });
+  });
 });

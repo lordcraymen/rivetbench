@@ -107,7 +107,7 @@ Tasks:
 - [X] Document in README
 
 ### 5. MCP Server Lifecycle Handle (Priority: P2)
-**Status**: 🔴 Not Started  
+**Status**: ✅ Complete  
 **Effort**: Medium
 
 `startMcpServer` is fire-and-forget — no way to stop/restart. Blocks proper testing and graceful shutdown:
@@ -123,32 +123,32 @@ await mcp.stop();
 ```
 
 Tasks:
-- [ ] Refactor `startMcpServer` → `createMcpServer` returning lifecycle handle
-- [ ] Expose `start()` / `stop()` methods
-- [ ] Keep `startMcpServer` as convenience wrapper (non-breaking)
-- [ ] Unit tests for start/stop lifecycle
-- [ ] Update README and MCP guide
+- [X] Refactor `startMcpServer` → `createMcpServer` returning lifecycle handle
+- [X] Expose `start()` / `stop()` methods
+- [X] Keep `startMcpServer` as convenience wrapper (non-breaking)
+- [X] Unit tests for start/stop lifecycle
+- [X] Update README and MCP guide
 
 ### 6. MCP Tool Naming Guidance (Priority: P2)
-**Status**: 🔴 Not Started  
+**Status**: ✅ Complete  
 **Effort**: Tiny
 
 Dots in MCP tool names (`graph.getState`) are handled inconsistently by some MCP clients. Since rivetbench controls tool registration, a naming recommendation prevents interop issues.
 
 Tasks:
-- [ ] Document recommended naming convention (underscores preferred, dots discouraged)
-- [ ] Consider optional name validation/warning in `makeEndpoint`
-- [ ] Add guidance to README and MCP guide
+- [X] Document recommended naming convention (underscores preferred, dots discouraged)
+- [X] Consider optional name validation/warning in `makeEndpoint`
+- [X] Add guidance to README and MCP guide
 
 ### 7. Request ID Parity — BDD Test Completion (Priority: P2)
-**Status**: 🟡 Partially Complete  
+**Status**: ✅ Complete  
 **Carry-over from v0.2.0**
 
-Implementation is complete (all 3 transports generate + pass UUIDs), but BDD scenarios in `request-id-parity.feature` are still tagged `@wip`.
+Implementation is complete (all 3 transports generate + pass UUIDs), and BDD scenarios in `request-id-parity.feature` are now tagged `@implemented`.
 
 Tasks:
-- [ ] Implement BDD step definitions for request ID scenarios
-- [ ] Move feature tags from `@wip` to `@implemented`
+- [X] Implement BDD step definitions for request ID scenarios
+- [X] Move feature tags from `@wip` to `@implemented`
 
 ---
 

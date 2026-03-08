@@ -35,6 +35,9 @@ export class RivetBenchWorld extends World {
   public cliOutput?: string;
   public cliError?: string;
 
+  // Request ID parity testing
+  public capturedRequestIds: string[] = [];
+
   // Test utilities
   public expect = expect;
 
@@ -61,6 +64,9 @@ export class RivetBenchWorld extends World {
     this.cliExitCode = undefined;
     this.cliOutput = undefined;
     this.cliError = undefined;
+
+    // Reset request ID state
+    this.capturedRequestIds = [];
   }
 }
 

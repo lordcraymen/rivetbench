@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import { makeEndpoint } from '../../src/core/endpoint.js';
 
@@ -92,5 +92,62 @@ describe('makeEndpoint', () => {
     });
 
     expect(result).toEqual({ ok: true });
+  });
+
+  describe('name validation warning', () => {
+    it('should not warn for recommended names', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      makeEndpoint({
+        name: 'get-user',
+        summary: 'Get user',
+        input: z.object({}),
+        output: z.object({}),
+        handler: async () => ({}),
+      });
+
+      makeEndpoint({
+        name: 'send_email',
+        summary: 'Send email',
+        input: z.object({}),
+        output: z.object({}),
+        handler: async () => ({}),
+      });
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('should warn when name contains dots', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      makeEndpoint({
+        name: 'graph.getState',
+        summary: 'Dotted name',
+        input: z.object({}),
+        output: z.object({}),
+        handler: async () => ({}),
+      });
+
+      expect(spy).toHaveBeenCalledOnce();
+      expect(spy.mock.calls[0][0]).toContain('graph.getState');
+      spy.mockRestore();
+    });
+
+    it('should warn when name contains uppercase letters', () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      makeEndpoint({
+        name: 'GetUser',
+        summary: 'Uppercase name',
+        input: z.object({}),
+        output: z.object({}),
+        handler: async () => ({}),
+      });
+
+      expect(spy).toHaveBeenCalledOnce();
+      expect(spy.mock.calls[0][0]).toContain('GetUser');
+      spy.mockRestore();
+    });
   });
 });

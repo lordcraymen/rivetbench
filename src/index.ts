@@ -66,7 +66,12 @@ export { loadConfig, type ServerConfig, type DeepPartial } from './config/index.
 
 // Servers
 export { createRestServer, type RestServerOptions } from './server/rest.js';
-export { startMcpServer, type McpServerOptions } from './server/mcp.js';
+export {
+  createMcpServer,
+  startMcpServer,
+  type McpServerOptions,
+  type McpServerHandle,
+} from './server/mcp.js';
 
 // CLI
 export { createCli, type CreateCliOptions } from './cli/index.js';

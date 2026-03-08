@@ -85,6 +85,23 @@ export function expect(actual: unknown) {
       if (actual <= expected) {
         throw new AssertionError(`Expected ${actual} to be greater than ${expected}`);
       }
+    },
+
+    toMatch(pattern: RegExp) {
+      if (typeof actual !== 'string') {
+        throw new AssertionError(`Expected ${JSON.stringify(actual)} to be a string`);
+      }
+      if (!pattern.test(actual)) {
+        throw new AssertionError(`Expected "${actual}" to match ${pattern}`);
+      }
+    },
+
+    not: {
+      toBe(expected: unknown) {
+        if (actual === expected) {
+          throw new AssertionError(`Expected ${JSON.stringify(actual)} NOT to be ${JSON.stringify(expected)}`);
+        }
+      }
     }
   };
 }

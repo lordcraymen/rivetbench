@@ -8,8 +8,46 @@ export interface McpServerOptions {
   config: ServerConfig;
 }
 
-export const startMcpServer = async ({ registry, config }: McpServerOptions) => {
-  
+/**
+ * Lifecycle handle returned by {@link createMcpServer}.
+ * Provides explicit `start()` / `stop()` control over the MCP server.
+ *
+ * @example
+ * ```typescript
+ * const mcp = createMcpServer({ registry, config });
+ * await mcp.start();
+ * // … later
+ * await mcp.stop();
+ * ```
+ */
+export interface McpServerHandle {
+  /** Start listening on the configured transport. */
+  start(): Promise<void>;
+  /** Gracefully shut down the MCP server and unsubscribe change listeners. */
+  stop(): Promise<void>;
+  /** The underlying FastMCP instance (for advanced use). */
+  readonly server: FastMCP;
+}
+
+/**
+ * Create an MCP server **without** starting it.
+ *
+ * This is the recommended entry point when you need lifecycle control
+ * (e.g. graceful shutdown, testing, restart). Call {@link McpServerHandle.start}
+ * to begin listening.
+ *
+ * @param options - Registry and server configuration.
+ * @returns A {@link McpServerHandle} with `start()` and `stop()` methods.
+ *
+ * @example
+ * ```typescript
+ * const handle = createMcpServer({ registry, config });
+ * await handle.start();
+ * // later…
+ * await handle.stop();
+ * ```
+ */
+export const createMcpServer = ({ registry, config }: McpServerOptions): McpServerHandle => {
   // Create FastMCP server instance
   const mcp = new FastMCP({
     name: config.application.name,
@@ -19,40 +57,33 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
 
   // Register each endpoint as an MCP tool
   const endpoints = registry.list();
-  
+
   for (const endpoint of endpoints) {
     mcp.addTool({
       name: endpoint.name,
       description: endpoint.description || endpoint.summary,
       parameters: endpoint.input as never, // Zod schemas are compatible with StandardSchemaV1
       execute: async (args, context) => {
-        // Generate a unique request ID for observability parity with REST.
-        // Note: While MCP (JSON-RPC 2.0) has a built-in request ID, FastMCP doesn't
-        // expose it in the context. We generate our own UUID for application-level tracing.
         const requestId = crypto.randomUUID();
-        
+
         try {
-          // Validate and parse input using Zod schema
           const parsedInput = endpoint.input.safeParse(args);
-          
+
           if (!parsedInput.success) {
             throw new ValidationError('Invalid tool input', {
               tool: endpoint.name,
               issues: parsedInput.error.format()
             });
           }
-          
-          // Execute the endpoint handler with request ID for observability
+
           const result = await endpoint.handler({
             input: parsedInput.data,
             config: { requestId },
             ctx: registry.createContext(),
           });
-          
-          // Validate output
+
           const validatedOutput = endpoint.output.parse(result);
-          
-          // Return as text content with formatted JSON
+
           return {
             content: [
               {
@@ -62,18 +93,15 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
             ]
           };
         } catch (error) {
-          // Convert to RivetBench error for consistent handling
           const rivetError = toRivetBenchError(error);
-          
-          // Log error using FastMCP's logger (writes to stderr)
+
           context.log.error('Tool execution failed', {
             tool: endpoint.name,
             requestId,
             errorCode: rivetError.code,
             errorMessage: rivetError.message
           } as Record<string, string>);
-          
-          // Return structured error response
+
           return {
             content: [
               {
@@ -88,38 +116,66 @@ export const startMcpServer = async ({ registry, config }: McpServerOptions) => 
     });
   }
 
-  // Start the MCP server with appropriate transport
-  const transportType = config.mcp.transport === 'stdio' ? 'stdio' : 'httpStream';
-  
-  await mcp.start({
-    transportType,
-    ...(config.mcp.transport === 'tcp' && config.mcp.port ? {
-      httpStream: {
-        port: config.mcp.port,
-        host: '0.0.0.0'
+  let unsubscribeToolsChanged: (() => void) | undefined;
+
+  const start = async (): Promise<void> => {
+    const transportType = config.mcp.transport === 'stdio' ? 'stdio' : 'httpStream';
+
+    await mcp.start({
+      transportType,
+      ...(config.mcp.transport === 'tcp' && config.mcp.port ? {
+        httpStream: {
+          port: config.mcp.port,
+          host: '0.0.0.0'
+        }
+      } : {})
+    });
+
+    // Subscribe to tool-list changes and forward as MCP notifications.
+    unsubscribeToolsChanged = registry.onToolsChanged(() => {
+      for (const session of mcp.sessions) {
+        session.server.sendToolListChanged().catch((err: unknown) => {
+          // Best-effort: session may have disconnected.
+          // eslint-disable-next-line no-console
+          console.error('Failed to send tools/list_changed notification', err);
+        });
       }
-    } : {})
-  });
+    });
 
-  // Subscribe to tool-list changes and forward as MCP notifications.
-  // Each active session receives `notifications/tools/list_changed` so
-  // clients know to re-fetch the tool catalogue.
-  registry.onToolsChanged(() => {
-    for (const session of mcp.sessions) {
-      session.server.sendToolListChanged().catch((err: unknown) => {
-        // Best-effort: session may have disconnected.
-        // eslint-disable-next-line no-console
-        console.error('Failed to send tools/list_changed notification', err);
-      });
+    // eslint-disable-next-line no-console
+    console.error(`MCP server started with ${transportType} transport`);
+    // eslint-disable-next-line no-console
+    console.error(`Exposed tools: ${endpoints.map(e => e.name).join(', ')}`);
+  };
+
+  const stop = async (): Promise<void> => {
+    if (unsubscribeToolsChanged) {
+      unsubscribeToolsChanged();
+      unsubscribeToolsChanged = undefined;
     }
-  });
+    await mcp.stop();
+  };
 
-  // eslint-disable-next-line no-console
-  console.error(`MCP server started with ${transportType} transport`);
-  // eslint-disable-next-line no-console
-  console.error(`Exposed tools: ${endpoints.map(e => e.name).join(', ')}`);
+  return { start, stop, server: mcp };
+};
 
-  return mcp;
+/**
+ * Convenience wrapper: creates **and starts** an MCP server in one call.
+ *
+ * Equivalent to:
+ * ```ts
+ * const handle = createMcpServer(opts);
+ * await handle.start();
+ * return handle;
+ * ```
+ *
+ * @param options - Registry and server configuration.
+ * @returns The running {@link McpServerHandle}.
+ */
+export const startMcpServer = async (options: McpServerOptions): Promise<McpServerHandle> => {
+  const handle = createMcpServer(options);
+  await handle.start();
+  return handle;
 };
 
 // Start MCP server when this file is run directly

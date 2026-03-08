@@ -449,10 +449,12 @@ await client.connect(transport);
 
 ### 1. Descriptive Names
 
-Use clear, hyphenated tool names that describe the action:
+Use clear, hyphenated or underscored tool names that describe the action:
 
-✅ **Good**: `calculate-tax`, `send-email`, `fetch-weather`  
+✅ **Good**: `calculate-tax`, `send_email`, `fetch-weather`  
 ❌ **Bad**: `calc`, `email`, `weather`
+
+> **Naming convention**: Use lowercase alphanumeric names with hyphens (`-`) or underscores (`_`). Dots (`.`) in MCP tool names are handled inconsistently by some clients (e.g. `graph.getState` may be split on the dot). `makeEndpoint` will emit a warning to stderr when a name contains dots, uppercase letters, or other non-recommended characters.
 
 ### 2. Comprehensive Descriptions
 

@@ -122,11 +122,23 @@ export type AnyEndpointDefinition = EndpointDefinition<any, any, any>;
 export type ContextFactory<TCtx> = () => TCtx;
 
 /**
+ * Regex for the recommended endpoint name format.
+ * Lowercase alphanumerics, hyphens, and underscores.
+ * Dots are discouraged because some MCP clients handle them inconsistently.
+ */
+const RECOMMENDED_NAME_RE = /^[a-z0-9][a-z0-9_-]*$/;
+
+/**
  * Create a type-safe endpoint definition.
  *
  * This is the primary entry point for defining endpoints. The returned object
  * is registered in an {@link EndpointRegistry} and automatically exposed via
  * REST, MCP, and CLI transports.
+ *
+ * **Naming guidance**: Use lowercase alphanumeric names with hyphens or
+ * underscores (e.g. `get_user`, `send-email`). Dots in names are discouraged
+ * because some MCP clients handle them inconsistently. Names that don't match
+ * the recommended pattern will trigger a warning on stderr.
  *
  * @typeParam TInput  - Zod schema for the endpoint input.
  * @typeParam TOutput - Zod schema for the endpoint output.
@@ -151,5 +163,16 @@ export const makeEndpoint = <
   TCtx = undefined,
 >(
   definition: EndpointDefinition<TInput, TOutput, TCtx>
-): EndpointDefinition<TInput, TOutput, TCtx> => definition;
+): EndpointDefinition<TInput, TOutput, TCtx> => {
+  if (!RECOMMENDED_NAME_RE.test(definition.name)) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[rivetbench] Warning: Endpoint name "${definition.name}" does not match ` +
+      'the recommended pattern /^[a-z0-9][a-z0-9_-]*$/. ' +
+      'Dots and uppercase letters may cause issues with some MCP clients. ' +
+      'Prefer lowercase names with hyphens or underscores.'
+    );
+  }
+  return definition;
+};
 
