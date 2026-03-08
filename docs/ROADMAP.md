@@ -27,7 +27,8 @@ This document outlines the development history and next steps for the RivetBench
 ## Next: Version 0.3.0 — Embedding & AI Agent Experience
 
 > **Theme**: Make rivetbench a first-class *library dependency* for AI agents and human developers building on top of it.  
-> **Origin**: Real-world integration feedback from an agent embedding rivetbench as a downstream dependency.
+> **Origin**: Real-world integration feedback from an agent embedding rivetbench as a downstream dependency.  
+> **Background**: See [AGENT_FEEDBACK.md](AGENT_FEEDBACK.md) for the original unedited feedback that motivated these features.
 
 ### 1. Programmatic Config Overrides (Priority: P0)
 **Status**: 🔴 Not Started  
