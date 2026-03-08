@@ -1,6 +1,6 @@
 {
   "name": "@lordcraymen/rivetbench",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Lightweight TypeScript framework for dual-exposed endpoints (REST + MCP).",
   "license": "MIT",
   "repository": {
