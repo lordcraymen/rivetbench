@@ -4,27 +4,33 @@ This document outlines the development history and next steps for the RivetBench
 
 ## Current Status
 
-**Version**: 0.2.0  
+**Version**: 0.3.0  
 **Date**: March 2026
 
 ### What's Working
 
 ✅ **Core Framework**: Write-once endpoints with Zod schemas  
 ✅ **REST Server**: Full REST API with Swagger UI at `/docs`  
-✅ **MCP Server**: Dual transport (stdio + HTTP Stream) MCP implementation  
+✅ **MCP Server**: Dual transport (stdio + HTTP Stream) with lifecycle handle  
 ✅ **Schema Generation**: Automatic OpenAPI + MCP JSON Schema  
 ✅ **CLI Tool**: Full CLI with named parameters, JSON input, and raw output  
 ✅ **BDD Testing**: Cucumber step definitions and integration tests  
 ✅ **Error Handling**: Custom error classes and structured logging  
-✅ **Request ID Parity**: UUID-based request tracing across all transports  
+✅ **Request ID Parity**: UUID-based request tracing across all transports (with BDD tests)  
 ✅ **Dynamic Tool Notifications**: Runtime tool-list changes with MCP push + REST ETag  
 ✅ **Tool Enrichers**: Per-request tool list filtering/annotation  
+✅ **Programmatic Config Overrides**: `loadConfig()` with `DeepPartial<ServerConfig>`  
+✅ **Custom Handler Context / DI**: Typed `ctx` injection via context factory  
+✅ **API Reference**: Complete API docs in README  
+✅ **Core Sub-Export**: `@lordcraymen/rivetbench/core` for tree-shaking  
+✅ **MCP Lifecycle Handle**: `createMcpServer()` with `start()`/`stop()`  
+✅ **MCP Tool Naming Guidance**: Validation warning + documentation  
 ✅ **CI/CD**: GitHub Actions with Node 20.x and 22.x  
 ✅ **Quality**: Pre-commit hooks, linting, type checking
 
 ---
 
-## Next: Version 0.3.0 — Embedding & AI Agent Experience
+## Released: Version 0.3.0 — Embedding & AI Agent Experience
 
 > **Theme**: Make rivetbench a first-class *library dependency* for AI agents and human developers building on top of it.  
 > **Origin**: Real-world integration feedback from an agent embedding rivetbench as a downstream dependency.  
@@ -224,6 +230,23 @@ See `AGENTS.MD` for detailed workflow guidance.
 ---
 
 ## Version History
+
+### Version 0.3.0 (March 2026) — Embedding & AI Agent Experience
+**Highlights**: Programmatic config, custom handler context/DI, API reference, core sub-export, MCP lifecycle, tool naming guidance, BDD completion
+
+**Added**:
+- Programmatic config overrides: `loadConfig()` accepts `DeepPartial<ServerConfig>` for clean library embedding
+- Custom handler context / DI: Typed `ctx` parameter via `ContextFactory` at registry level
+- API Reference section in README with full signatures and embedding example
+- `@lordcraymen/rivetbench/core` sub-export for tree-shaking (no Fastify/fastmcp/Pino)
+- `createMcpServer()` returning `McpServerHandle` with `start()`/`stop()` lifecycle control
+- `startMcpServer()` preserved as backward-compatible convenience wrapper
+- MCP tool naming validation: `makeEndpoint` warns on dots/uppercase in names
+- Tool naming guidance in README and MCP Guide
+- BDD step definitions for request ID parity (4 scenarios, moved from `@wip` to `@implemented`)
+- `toMatch()` and `not.toBe()` assertion helpers for Cucumber steps
+
+**Stats**: 135 unit tests, 15 BDD scenarios (51 steps), 12 test files
 
 ### Version 0.2.0 (March 2026) — Triple Transport & Dynamic Tools
 **Highlights**: Request ID parity, tool enrichers, dynamic notifications, ETag caching
