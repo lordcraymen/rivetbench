@@ -248,6 +248,198 @@ Endpoints that don't need custom context work exactly as before — `ctx` defaul
 
 ---
 
+## API Reference
+
+### `makeEndpoint(definition): EndpointDefinition`
+
+Creates a type-safe endpoint definition. This is the primary entry point for defining endpoints that are automatically exposed via REST, MCP, and CLI.
+
+```ts
+import { makeEndpoint } from '@lordcraymen/rivetbench';
+import { z } from 'zod';
+
+const greet = makeEndpoint({
+  name: 'greet',              // unique endpoint name
+  summary: 'Greet a user',    // short description (used in OpenAPI + MCP)
+  description: 'Optional longer description',
+  input: z.object({ name: z.string() }),
+  output: z.object({ greeting: z.string() }),
+  handler: async ({ input, config, ctx }) => ({
+    greeting: `Hello, ${input.name}!`,
+  }),
+});
+```
+
+**Type parameters:**
+- `TInput` — Zod schema for the endpoint input
+- `TOutput` — Zod schema for the endpoint output
+- `TCtx` — Optional user-provided context type (defaults to `undefined`)
+
+### `EndpointDefinition<TInput, TOutput, TCtx>`
+
+The interface returned by `makeEndpoint`. Key fields:
+
+| Field         | Type                                        | Description                     |
+|---------------|---------------------------------------------|---------------------------------|
+| `name`        | `string`                                    | Unique endpoint name            |
+| `summary`     | `string`                                    | Short description               |
+| `description` | `string?`                                   | Optional long description       |
+| `input`       | `TInput` (Zod schema)                       | Input validation schema         |
+| `output`      | `TOutput` (Zod schema)                      | Output validation schema        |
+| `handler`     | `(ctx: EndpointContext) => Promise<TOutput>` | Async handler function          |
+
+### `EndpointContext<TInput, TOutput, TCtx>`
+
+The context object received by every endpoint handler:
+
+| Field    | Type                    | Description                                         |
+|----------|-------------------------|-----------------------------------------------------|
+| `input`  | `z.infer<TInput>`       | Validated and parsed input data                     |
+| `config` | `EndpointRuntimeConfig` | Runtime config (includes `requestId?: string`)      |
+| `ctx`    | `TCtx`                  | User-provided custom context (`undefined` by default) |
+
+### `InMemoryEndpointRegistry`
+
+Default in-memory registry that stores endpoint definitions and manages tool lifecycle:
+
+```ts
+import { InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+
+const registry = new InMemoryEndpointRegistry();
+
+registry.register(greet);             // register an endpoint
+registry.get('greet');                // lookup by name
+registry.list();                      // all registered endpoints
+registry.listEnriched({ transportType: 'rest' }); // enriched tool list
+
+registry.setContextFactory(() => ({   // DI: inject custom context
+  db: dbPool,
+}));
+registry.setToolEnricher((tools, ctx) => tools); // per-request tool filtering
+registry.signalToolsChanged();        // notify connected clients
+registry.onToolsChanged(() => { });   // subscribe to changes
+registry.etag;                        // current ETag string
+registry.version;                     // monotonic version counter
+```
+
+### `loadConfig(overrides?): ServerConfig`
+
+Loads configuration from environment variables, optionally deep-merged with programmatic overrides:
+
+```ts
+import { loadConfig } from '@lordcraymen/rivetbench';
+
+const config = loadConfig();                          // env-var defaults only
+const config2 = loadConfig({ rest: { port: 4000 } }); // override REST port
+```
+
+**`ServerConfig` shape:**
+```ts
+interface ServerConfig {
+  rest:        { host: string; port: number };
+  mcp:         { transport: 'stdio' | 'tcp'; port?: number };
+  application: { name: string; version: string; description?: string };
+  logging:     { level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'; pretty: boolean };
+  environment: 'development' | 'production' | 'test';
+}
+```
+
+### `createRestServer(options): Promise<{ fastify, start() }>`
+
+Creates a Fastify-based REST server with Swagger UI, ETag caching, and error handling:
+
+```ts
+import { createRestServer, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+
+const config = loadConfig();
+const registry = new InMemoryEndpointRegistry();
+registry.register(greet);
+
+const server = await createRestServer({ registry, config });
+
+// server.fastify — the underlying Fastify instance (for custom routes, plugins, etc.)
+// server.start() — binds to config.rest.host:config.rest.port and returns the Fastify instance
+await server.start();
+```
+
+**Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
+**Returns:** `{ fastify: FastifyInstance; start(): Promise<FastifyInstance> }`
+
+### `startMcpServer(options): Promise<FastMCP>`
+
+Starts an MCP server exposing all registered endpoints as MCP tools:
+
+```ts
+import { startMcpServer, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+
+const config = loadConfig({ mcp: { transport: 'stdio' } });
+const registry = new InMemoryEndpointRegistry();
+registry.register(greet);
+
+const mcp = await startMcpServer({ registry, config });
+```
+
+**Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
+**Returns:** `FastMCP` instance
+
+### Complete Programmatic Embedding Example
+
+```ts
+import { z } from 'zod';
+import {
+  makeEndpoint,
+  InMemoryEndpointRegistry,
+  createRestServer,
+  startMcpServer,
+  loadConfig,
+} from '@lordcraymen/rivetbench';
+
+// 1. Define endpoints
+const greet = makeEndpoint({
+  name: 'greet',
+  summary: 'Greet a user',
+  input: z.object({ name: z.string() }),
+  output: z.object({ greeting: z.string() }),
+  handler: async ({ input }) => ({ greeting: `Hello, ${input.name}!` }),
+});
+
+// 2. Create registry and register endpoints
+const registry = new InMemoryEndpointRegistry();
+registry.register(greet);
+
+// 3. Load config with programmatic overrides
+const config = loadConfig({
+  application: { name: 'my-app', version: '1.0.0' },
+  rest: { port: 4000 },
+});
+
+// 4. Start REST server (Swagger UI at http://localhost:4000/docs)
+const rest = await createRestServer({ registry, config });
+await rest.start();
+
+// 5. Optionally start MCP server alongside REST
+const mcpConfig = loadConfig({
+  ...config,
+  mcp: { transport: 'tcp', port: 4001 },
+});
+await startMcpServer({ registry, config: mcpConfig });
+```
+
+### Sub-Export: `@lordcraymen/rivetbench/core`
+
+For modules that only define endpoints, import from the lightweight `core` sub-export. This avoids pulling in Fastify, fastmcp, and Pino as transitive dependencies:
+
+```ts
+// Only imports endpoint factory, registry, and error classes — no transport deps
+import { makeEndpoint, type EndpointDefinition } from '@lordcraymen/rivetbench/core';
+```
+
+**Included in `core`:** `makeEndpoint`, `EndpointDefinition`, `EndpointContext`, `EndpointHandler`, `AnyEndpointDefinition`, `EndpointRuntimeConfig`, `ContextFactory`, `EndpointRegistry`, `InMemoryEndpointRegistry`, `ToolEnricher`, `ToolEnricherContext`, `ToolsChangedListener`, and all error classes (`RivetBenchError`, `ValidationError`, `EndpointNotFoundError`, `InternalServerError`, `ConfigurationError`, `isRivetBenchError`, `toRivetBenchError`).
+
+**NOT in `core`:** `createRestServer`, `startMcpServer`, `loadConfig`, `createLogger`, `createCli`.
+
+---
+
 ## RPC‑over‑REST semantics
 
 * **POST‑only**: Each call is `POST /rpc/:name` (default) or `POST /tools/:name`.

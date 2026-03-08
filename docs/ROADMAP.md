@@ -48,10 +48,10 @@ const config = loadConfig({
 ```
 
 Tasks:
-- [ ] Add `DeepPartial<ServerConfig>` override parameter to `loadConfig()`
-- [ ] Deep-merge overrides with env-var defaults (overrides win)
-- [ ] Unit tests for merge behavior and edge cases
-- [ ] Update JSDoc and README
+- [X] Add `DeepPartial<ServerConfig>` override parameter to `loadConfig()`
+- [X] Deep-merge overrides with env-var defaults (overrides win)
+- [X] Unit tests for merge behavior and edge cases
+- [X] Update JSDoc and README
 
 ### 2. Custom Handler Context / Dependency Injection (Priority: P0)
 **Status**: � Complete  
@@ -74,37 +74,37 @@ makeEndpoint({
 ```
 
 Tasks:
-- [ ] Add generic context type parameter to `makeEndpoint` / `EndpointDefinition`
-- [ ] Extend `EndpointContext` to include an optional user-provided `ctx`
-- [ ] Allow context factory injection at registry or server creation level
-- [ ] Maintain backward compatibility (no `ctx` required by default)
-- [ ] Unit tests and migration guide
-- [ ] Update endpoint and registry JSDoc
+- [X] Add generic context type parameter to `makeEndpoint` / `EndpointDefinition`
+- [X] Extend `EndpointContext` to include an optional user-provided `ctx`
+- [X] Allow context factory injection at registry or server creation level
+- [X] Maintain backward compatibility (no `ctx` required by default)
+- [X] Unit tests and migration guide
+- [X] Update endpoint and registry JSDoc
 
 ### 3. API Reference in README (Priority: P1)
-**Status**: 🔴 Not Started  
+**Status**: ✅ Complete  
 **Effort**: Small
 
 The npm README is the **only** thing an AI agent sees on first contact. Currently missing API signatures — agents must `cat` 4+ `.d.ts` files to understand the types. This costs ~5k tokens of exploration per first-time integration.
 
 Tasks:
-- [ ] Add `## API Reference` section to README
-- [ ] Document key signatures: `makeEndpoint`, `EndpointDefinition`, `EndpointContext`, `InMemoryEndpointRegistry`, `createRestServer`, `startMcpServer`, `loadConfig`
-- [ ] Include one complete programmatic embedding example (not just CLI/dev-mode)
-- [ ] Clarify REST server return type (`{ fastify, start() }`) and lifecycle
+- [X] Add `## API Reference` section to README
+- [X] Document key signatures: `makeEndpoint`, `EndpointDefinition`, `EndpointContext`, `InMemoryEndpointRegistry`, `createRestServer`, `startMcpServer`, `loadConfig`
+- [X] Include one complete programmatic embedding example (not just CLI/dev-mode)
+- [X] Clarify REST server return type (`{ fastify, start() }`) and lifecycle
 
 ### 4. Sub-Export `./core` for Tree-Shaking (Priority: P1)
-**Status**: 🔴 Not Started  
+**Status**: ✅ Complete  
 **Effort**: Small
 
 Importing `@lordcraymen/rivetbench` pulls in Fastify, fastmcp, Pino, etc. Consumers who only need `makeEndpoint` + `InMemoryEndpointRegistry` (endpoint definition files) get all transport dependencies transitively.
 
 Tasks:
-- [ ] Add `@lordcraymen/rivetbench/core` export map entry in package.json
-- [ ] Core sub-export includes: `makeEndpoint`, `EndpointDefinition`, `EndpointContext`, `InMemoryEndpointRegistry`, `EndpointRegistry`, error classes
-- [ ] Core sub-export does NOT import Fastify, fastmcp, or Pino
-- [ ] Verify tree-shaking works with bundlers
-- [ ] Document in README
+- [X] Add `@lordcraymen/rivetbench/core` export map entry in package.json
+- [X] Core sub-export includes: `makeEndpoint`, `EndpointDefinition`, `EndpointContext`, `InMemoryEndpointRegistry`, `EndpointRegistry`, error classes
+- [X] Core sub-export does NOT import Fastify, fastmcp, or Pino
+- [X] Verify tree-shaking works with bundlers
+- [X] Document in README
 
 ### 5. MCP Server Lifecycle Handle (Priority: P2)
 **Status**: 🔴 Not Started  
