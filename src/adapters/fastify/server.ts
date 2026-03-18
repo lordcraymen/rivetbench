@@ -2,12 +2,12 @@ import Fastify, { FastifyInstance } from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import type { Logger as PinoLogger } from 'pino';
-import { buildOpenApiDocument } from './openapi.js';
 import type { EndpointRegistry } from '../../domain/registry.js';
 import type { ServerConfig } from '../../config/index.js';
 import type { LoggerPort } from '../../ports/logger.js';
 import type { TransportPort } from '../../ports/transport.js';
 import { createErrorHandler, createNotFoundHandler } from './error-handler.js';
+import { createRestHandler } from '../rest/handler.js';
 import { createMcpHandler } from '../mcp/handler.js';
 
 /**
@@ -50,19 +50,22 @@ export async function rivetBenchPlugin(
 ): Promise<void> {
   const { transport, registry, loggerPort, application } = options;
 
-  // Error handlers use LoggerPort (ADR-0004, ADR-0006)
+  // Error handlers for Fastify-native routes (e.g. Swagger UI)
   fastify.setErrorHandler(createErrorHandler(loggerPort));
   fastify.setNotFoundHandler(createNotFoundHandler(loggerPort));
 
-  const document = buildOpenApiDocument(registry.list(), {
-    title: application.name,
-    version: application.version,
-    description: application.description,
+  // Framework-agnostic REST handler (ADR-0005)
+  const restHandler = createRestHandler({
+    transport,
+    registry,
+    logger: loggerPort,
+    application,
   });
 
+  // Swagger UI — Fastify-specific convenience fed by the shared OpenAPI doc
   await fastify.register(fastifySwagger, {
     mode: 'static',
-    specification: { document },
+    specification: { document: restHandler.getOpenApiDocument() },
   });
 
   await fastify.register(fastifySwaggerUi, {
@@ -72,37 +75,19 @@ export async function rivetBenchPlugin(
     transformStaticCSP: (header) => header,
   });
 
-  fastify.get('/health', async () => ({ status: 'ok' }));
+  // Delegate REST routes to framework-agnostic handler via reply.hijack()
+  const restDelegate = async (
+    request: { raw: import('node:http').IncomingMessage; body: unknown },
+    reply: { raw: import('node:http').ServerResponse; hijack: () => void },
+  ) => {
+    reply.hijack();
+    await restHandler.handleRequest(request.raw, reply.raw, request.body);
+  };
 
-  /**
-   * Tool listing endpoint with ETag / If-None-Match cache validation.
-   */
-  fastify.get('/tools', async (request, reply) => {
-    const currentEtag = registry.etag;
-
-    const ifNoneMatch = request.headers['if-none-match'];
-    if (ifNoneMatch && ifNoneMatch === currentEtag) {
-      return reply.status(304).send();
-    }
-
-    const tools = transport.list({
-      sessionId: request.id,
-      transportType: 'rest',
-    });
-
-    return reply
-      .header('ETag', currentEtag)
-      .header('Cache-Control', 'no-cache')
-      .send(tools);
-  });
-
-  fastify.post('/rpc/:name', async (request) => {
-    const endpointName = (request.params as { name: string }).name;
-    const result = await transport.invoke(endpointName, request.body, {
-      requestId: request.id,
-    });
-    return result.output;
-  });
+  fastify.get('/health', restDelegate);
+  fastify.get('/tools', restDelegate);
+  fastify.get('/openapi.json', restDelegate);
+  fastify.post('/rpc/:name', restDelegate);
 
   // MCP Streamable HTTP endpoint — delegates to SDK transport via raw HTTP.
   const mcpHandler = createMcpHandler({

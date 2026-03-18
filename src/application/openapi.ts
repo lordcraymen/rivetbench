@@ -1,6 +1,6 @@
 import { OpenAPIV3 } from 'openapi-types';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { AnyEndpointDefinition } from '../../domain/endpoint.js';
+import { AnyEndpointDefinition } from '../domain/endpoint.js';
 
 export interface OpenApiGeneratorOptions {
   title: string;

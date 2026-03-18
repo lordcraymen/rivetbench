@@ -67,7 +67,7 @@ export { createTransportPort } from './application/create-transport-port.js';
 export {
   buildOpenApiDocument,
   type OpenApiGeneratorOptions,
-} from './adapters/fastify/openapi.js';
+} from './application/openapi.js';
 
 // Config
 export { loadConfig, type ServerConfig, type DeepPartial } from './config/index.js';
@@ -79,6 +79,11 @@ export {
   type RestServerOptions,
   type RivetBenchPluginOptions,
 } from './adapters/fastify/server.js';
+export {
+  createRestHandler,
+  type RestHandlerOptions,
+  type RestHandler,
+} from './adapters/rest/handler.js';
 export {
   createMcpHandler,
   type McpHandlerOptions,
