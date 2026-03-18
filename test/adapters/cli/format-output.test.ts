@@ -1,41 +1,7 @@
 import { describe, it, expect } from 'vitest';
-
-// We need to extract the formatOutput function to test it independently
-// For now, let's test the logic through the CLI integration tests above
-// and add specific unit tests for the format logic
+import { formatOutput } from '../../../src/adapters/cli/arg-parser.js';
 
 describe('CLI formatOutput', () => {
-  // Helper function that mimics the formatOutput logic for testing
-  const formatOutput = (output: unknown, rawOutput: boolean): string => {
-    if (!rawOutput) {
-      return JSON.stringify(output, null, 2);
-    }
-
-    // For raw output, try to extract simple values intelligently
-    if (output === null || output === undefined) {
-      return '';
-    }
-
-    // If it's a primitive value, return it directly
-    if (typeof output === 'string' || typeof output === 'number' || typeof output === 'boolean') {
-      return String(output);
-    }
-
-    // If it's an object with a single property, return the value of that property
-    if (typeof output === 'object' && output !== null) {
-      const keys = Object.keys(output);
-      if (keys.length === 1) {
-        const singleValue = (output as Record<string, unknown>)[keys[0]];
-        if (typeof singleValue === 'string' || typeof singleValue === 'number' || typeof singleValue === 'boolean') {
-          return String(singleValue);
-        }
-      }
-    }
-
-    // For complex objects, fall back to JSON even in raw mode
-    return JSON.stringify(output, null, 2);
-  };
-
   describe('JSON output mode (rawOutput: false)', () => {
     it('formats objects as pretty JSON', () => {
       const output = { message: 'hello' };

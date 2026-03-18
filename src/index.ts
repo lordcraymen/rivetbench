@@ -57,10 +57,12 @@ export {
 export { createLogger, createPinoLoggerPort } from './adapters/pino/logger.js';
 
 export { type LoggerPort } from './ports/logger.js';
+export { type TransportPort } from './ports/transport.js';
 
 // Application service
 export { invokeEndpoint, type InvocationResult } from './application/invoke-endpoint.js';
 export { listEndpoints, type EndpointSummary } from './application/list-endpoints.js';
+export { createTransportPort } from './application/create-transport-port.js';
 
 export {
   buildOpenApiDocument,
@@ -71,12 +73,19 @@ export {
 export { loadConfig, type ServerConfig, type DeepPartial } from './config/index.js';
 
 // Servers
-export { createRestServer, type RestServerOptions } from './adapters/fastify/server.js';
+export {
+  createRestServer,
+  rivetBenchPlugin,
+  type RestServerOptions,
+  type RivetBenchPluginOptions,
+} from './adapters/fastify/server.js';
 export {
   createMcpServer,
   startMcpServer,
+  registerMcpTools,
   type McpServerOptions,
   type McpServerHandle,
+  type McpPluginOptions,
 } from './adapters/fastmcp/server.js';
 
 // CLI

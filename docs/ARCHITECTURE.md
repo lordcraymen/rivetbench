@@ -205,10 +205,12 @@ src/
 │
 ├── application/               # Use cases — orchestration layer
 │   ├── invoke-endpoint.ts     # validate → call → validate pipeline
-│   └── list-endpoints.ts      # list + enrich endpoints
+│   ├── list-endpoints.ts      # list + enrich endpoints
+│   └── create-transport-port.ts # Factory wiring app services → TransportPort
 │
 ├── ports/                     # Port interfaces
-│   └── logger.ts              # LoggerPort interface
+│   ├── logger.ts              # LoggerPort interface
+│   └── transport.ts           # TransportPort interface (driving port)
 │
 ├── adapters/                  # Infrastructure implementations
 │   ├── fastify/               # Fastify REST adapter
@@ -277,22 +279,16 @@ Any adapter implementing `LoggerPort` can replace Pino without breaking the appl
 ### DIP — Dependency Inversion
 The application service depends on `LoggerPort` (abstraction), not on Pino (concrete). The composition root wires the concrete to the abstract.
 
-## Migration Path
+## Migration Path (Complete)
 
-The refactor from the current structure to hexagonal can be done incrementally:
+All migration steps have been completed across Phases 1–6:
 
-1. **Extract application service** — Move the duplicated validate→invoke→validate pipeline into `src/application/invoke-endpoint.ts`. Have all three transports call it. (Highest value, lowest risk.)
-
-2. **Extract logger port** — Define `LoggerPort` interface in `src/ports/logger.ts`. Create Pino adapter. Pass through DI.
-
-3. **Move domain types** — Rename `src/core/` to `src/domain/`. Update imports. (Mechanical refactor.)
-
-4. **Relocate adapters** — Move `src/server/rest.ts` → `src/adapters/fastify/`, `src/server/mcp.ts` → `src/adapters/fastmcp/`, `src/cli/` → `src/adapters/cli/`.
-
-5. **Extract composition root** — Move bootstrap logic from `isMainModule` blocks into `src/composition/`.
-
-6. **Decouple error handler** — Move Fastify-specific error handling from `core/error-handler.ts` to `adapters/fastify/`.
-
-7. **Move OpenAPI** — Relocate `core/openapi.ts` to `adapters/fastify/openapi.ts` (it's REST-adapter-specific).
-
-Each step is independently deployable and testable.
+1. ~~Extract application service~~ — `src/application/invoke-endpoint.ts` + `list-endpoints.ts` ✅
+2. ~~Extract logger port~~ — `LoggerPort` in `src/ports/logger.ts`, Pino adapter ✅
+3. ~~Move domain types~~ — `src/domain/{endpoint,registry,errors}.ts` ✅
+4. ~~Relocate adapters~~ — `src/adapters/{fastify,fastmcp,cli,pino}/` ✅
+5. ~~Extract composition root~~ — `src/composition/standalone.ts` ✅
+6. ~~Decouple error handler~~ — `adapters/fastify/error-handler.ts` uses `LoggerPort` ✅
+7. ~~Move OpenAPI~~ — `adapters/fastify/openapi.ts` ✅
+8. ~~TransportPort driving interface~~ — `src/ports/transport.ts` + plugin pattern for all adapters ✅
+9. ~~CLI arg-parser extraction~~ — `src/adapters/cli/arg-parser.ts` (ADR-0009) ✅

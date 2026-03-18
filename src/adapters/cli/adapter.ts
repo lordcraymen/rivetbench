@@ -1,8 +1,12 @@
-import { EndpointRegistry } from '../../domain/registry.js';
+import type { EndpointRegistry } from '../../domain/registry.js';
 import type { ServerConfig } from '../../config/index.js';
-import { toRivetBenchError, ValidationError } from '../../domain/errors.js';
-import { invokeEndpoint } from '../../application/invoke-endpoint.js';
+import { toRivetBenchError } from '../../domain/errors.js';
 import type { LoggerPort } from '../../ports/logger.js';
+import type { TransportPort } from '../../ports/transport.js';
+import { parseCallArgs, formatOutput } from './arg-parser.js';
+
+// Re-export for backward compatibility
+export { formatOutput } from './arg-parser.js';
 
 export interface CliIoStreams {
   stdout: NodeJS.WritableStream;
@@ -13,6 +17,8 @@ export interface CreateCliOptions {
   registry: EndpointRegistry;
   config: ServerConfig;
   streams?: Partial<CliIoStreams>;
+  /** Optional TransportPort override. When omitted, built automatically. */
+  transport?: TransportPort;
 }
 
 const usageText = (applicationName: string) => `\
@@ -37,203 +43,12 @@ const writeLine = (stream: NodeJS.WritableStream, message = '') => {
   stream.write(`${message}\n`);
 };
 
-const handleList = (registry: EndpointRegistry, stdout: NodeJS.WritableStream) => {
-  const endpoints = registry.list();
-
-  if (endpoints.length === 0) {
-    writeLine(stdout, 'No endpoints registered.');
-    return;
-  }
-
-  for (const endpoint of endpoints) {
-    writeLine(stdout, `- ${endpoint.name}: ${endpoint.summary}`);
-  }
-};
-
-interface CallCommandArgs {
-  endpointName: string;
-  input: unknown;
-  rawOutput: boolean;
-}
-
-/**
- * Parse command line arguments for the call command.
- * Supports two formats:
- * 1. JSON input: --params-json '{"key": "value"}'
- * 2. Named parameters: -key value -otherKey otherValue
- * Also supports output formatting flags:
- * - --raw: Output raw values instead of JSON (for simple outputs)
- * 
- * CLI flags use double dashes (--) to avoid collision with endpoint parameters
- * that use single dashes (-).
- */
-const parseCallArgs = (args: string[]): CallCommandArgs => {
-  const [endpointName, ...rest] = args;
-
-  if (!endpointName) {
-    throw new ValidationError('Endpoint name is required for call command');
-  }
-
-  let rawOutput = false;
-  let hasParamsJson = false;
-
-  // First pass: check for CLI flags and remove them
-  const filteredArgs: string[] = [];
-  for (let index = 0; index < rest.length; index += 1) {
-    const flag = rest[index];
-    
-    if (flag === '--raw') {
-      rawOutput = true;
-      // Skip this flag, don't add to filteredArgs
-      continue;
-    }
-    
-    if (flag === '--params-json') {
-      hasParamsJson = true;
-      filteredArgs.push(flag);
-      continue;
-    }
-
-    // Reject old short flags with helpful error messages
-    if (flag === '-r') {
-      throw new ValidationError('Use --raw instead of -r for raw output flag');
-    }
-    
-    if (flag === '-i' || flag === '--input') {
-      throw new ValidationError('Use --params-json instead of --input or -i for JSON parameter input');
-    }
-    
-    filteredArgs.push(flag);
-  }
-
-  // Check if using JSON input format
-  for (let index = 0; index < filteredArgs.length; index += 1) {
-    const flag = filteredArgs[index];
-
-    if (flag === '--params-json') {
-      const value = filteredArgs[index + 1];
-
-      if (!value) {
-        throw new ValidationError('Missing value for --params-json flag');
-      }
-
-      try {
-        return { endpointName, input: JSON.parse(value), rawOutput };
-      } catch (error) {
-        throw new ValidationError('Invalid JSON input for --params-json', { rawInput: value, cause: String(error) });
-      }
-    }
-  }
-
-  // Reject mixing --params-json with individual parameters
-  if (hasParamsJson) {
-    throw new ValidationError('Cannot mix --params-json with individual -parameter flags');
-  }
-
-  // Parse named parameters format
-  const parsedInput: Record<string, unknown> = {};
-
-  for (let index = 0; index < filteredArgs.length; index += 2) {
-    const flag = filteredArgs[index];
-    const value = filteredArgs[index + 1];
-
-    if (!flag) break;
-
-    // Skip if not a parameter flag (doesn't start with -)
-    if (!flag.startsWith('-')) {
-      throw new ValidationError('Invalid parameter format. Use -paramName value or --params-json JSON', { flag });
-    }
-
-    // Reject double-dash parameters (reserved for CLI flags)
-    if (flag.startsWith('--')) {
-      throw new ValidationError(`Unknown CLI flag: ${flag}. Endpoint parameters must use single dash: -paramName`);
-    }
-
-    if (value === undefined) {
-      throw new ValidationError('Missing value for parameter', { flag });
-    }
-
-    // Remove leading dash and use as parameter name
-    const paramName = flag.substring(1);
-    
-    // Try to parse as number, boolean, or keep as string
-    let parsedValue: unknown = value;
-    
-    // Parse numbers
-    if (/^-?\d+(\.\d+)?$/.test(value)) {
-      parsedValue = Number(value);
-    } 
-    // Parse booleans
-    else if (value.toLowerCase() === 'true') {
-      parsedValue = true;
-    } 
-    else if (value.toLowerCase() === 'false') {
-      parsedValue = false;
-    }
-    // Try to parse as JSON (for arrays, objects, etc.)
-    else if ((value.startsWith('[') && value.endsWith(']')) || 
-             (value.startsWith('{') && value.endsWith('}'))) {
-      try {
-        parsedValue = JSON.parse(value);
-      } catch {
-        // If JSON parsing fails, keep as string
-        parsedValue = value;
-      }
-    }
-
-    parsedInput[paramName] = parsedValue;
-  }
-
-  return { endpointName, input: parsedInput, rawOutput };
-};
-
-/**
- * Format output based on the rawOutput flag and the structure of the result
- */
-export const formatOutput = (output: unknown, rawOutput: boolean): string => {
-  if (!rawOutput) {
-    return JSON.stringify(output, null, 2);
-  }
-
-  // For raw output, try to extract simple values intelligently
-  if (output === null || output === undefined) {
-    return '';
-  }
-
-  // If it's a primitive value, return it directly
-  if (typeof output === 'string' || typeof output === 'number' || typeof output === 'boolean') {
-    return String(output);
-  }
-
-  // If it's an object with a single property, return the value of that property
-  if (typeof output === 'object' && output !== null) {
-    const keys = Object.keys(output);
-    if (keys.length === 1) {
-      const singleValue = (output as Record<string, unknown>)[keys[0]];
-      if (typeof singleValue === 'string' || typeof singleValue === 'number' || typeof singleValue === 'boolean') {
-        return String(singleValue);
-      }
-    }
-  }
-
-  // For complex objects, fall back to JSON even in raw mode
-  return JSON.stringify(output, null, 2);
-};
-
-const handleCall = async (
-  registry: EndpointRegistry,
-  stdout: NodeJS.WritableStream,
-  args: string[],
-  logger: LoggerPort,
-) => {
-  const { endpointName, input, rawOutput } = parseCallArgs(args);
-  const result = await invokeEndpoint(registry, endpointName, input, logger);
-  writeLine(stdout, formatOutput(result.output, rawOutput));
-};
-
 /**
  * Create a RivetBench command line interface that mirrors the runtime
  * registry-driven behaviour used by the REST and MCP transports.
+ *
+ * All endpoint invocations are routed through the {@link TransportPort}
+ * driving interface, ensuring transport parity with REST and MCP.
  *
  * @example
  * ```ts
@@ -243,12 +58,12 @@ const handleCall = async (
  *
  * const config = loadConfig();
  * const registry = createDefaultRegistry();
- * const cli = createCli({ registry, config });
+ * const cli = createCli({ registry, config, transport });
  *
  * await cli.run(['list']);
  * ```
  */
-export const createCli = ({ registry, config, streams }: CreateCliOptions) => {
+export const createCli = ({ registry, config, streams, transport }: CreateCliOptions) => {
   const stdout = streams?.stdout ?? process.stdout;
   const stderr = streams?.stderr ?? process.stderr;
 
@@ -258,6 +73,31 @@ export const createCli = ({ registry, config, streams }: CreateCliOptions) => {
     warn: (msg) => { writeLine(stderr, `[warn] ${msg}`); },
     error: (msg) => { writeLine(stderr, `[error] ${msg}`); },
     child: () => cliLogger,
+  };
+
+  // Lazily resolve transport — permits construction without Transport in simple cases
+  const getTransport = async (): Promise<TransportPort> => {
+    if (transport) return transport;
+    const { createTransportPort } = await import('../../application/create-transport-port.js');
+    return createTransportPort(registry, cliLogger);
+  };
+
+  const handleList = () => {
+    const endpoints = registry.list();
+    if (endpoints.length === 0) {
+      writeLine(stdout, 'No endpoints registered.');
+      return;
+    }
+    for (const endpoint of endpoints) {
+      writeLine(stdout, `- ${endpoint.name}: ${endpoint.summary}`);
+    }
+  };
+
+  const handleCall = async (args: string[]) => {
+    const { endpointName, input, rawOutput } = parseCallArgs(args);
+    const tp = await getTransport();
+    const result = await tp.invoke(endpointName, input);
+    writeLine(stdout, formatOutput(result.output, rawOutput));
   };
 
   const run = async (argv: string[]): Promise<number> => {
@@ -270,12 +110,12 @@ export const createCli = ({ registry, config, streams }: CreateCliOptions) => {
 
     try {
       if (command === 'list') {
-        handleList(registry, stdout);
+        handleList();
         return 0;
       }
 
       if (command === 'call') {
-        await handleCall(registry, stdout, rest, cliLogger);
+        await handleCall(rest);
         return 0;
       }
 

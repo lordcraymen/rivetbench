@@ -53,3 +53,4 @@ export {
 
 // Ports
 export { type LoggerPort } from './ports/logger.js';
+export { type TransportPort } from './ports/transport.js';
