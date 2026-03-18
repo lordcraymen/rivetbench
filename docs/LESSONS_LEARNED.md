@@ -4,6 +4,22 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## March 2026 — Phase 9: Unified OpenAPI Topology + Express Integration
+
+### OpenAPI describes HTTP surface topology, not protocol internals
+
+The OpenAPI doc describes what URLs the server responds to and how.  `/mcp` is a topology entry — POST/GET/DELETE — just like a file server endpoint would be.  Individual MCP tools are discoverable through the MCP protocol (`tools/list`), not enumerated in OpenAPI.  A description note links the two surfaces.
+
+### `basePath` keeps OpenAPI paths honest when mounted at a sub-path
+
+When `app.use('/api', handler)` strips the prefix, the handler doesn't know its public URL.  A `basePath` option ensures `/api/rpc/echo` appears in the doc, not `/rpc/echo`.
+
+### Express `app.use()` strips the mount prefix from `req.url`
+
+Express rewrites `req.url` to remove the mount path.  The REST handler parses `req.url` internally, so `/api/rpc/echo` becomes `/rpc/echo` — no handler changes needed.  This is the intended Express behavior and the reason the framework-agnostic handler works without adaptation.
+
+---
+
 ## March 2026 — Phase 8: Decouple REST from Fastify
 
 ### OpenAPI generation is application-level, not adapter-level

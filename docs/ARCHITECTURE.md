@@ -298,3 +298,4 @@ All migration steps have been completed across Phases 1–7:
 9. ~~CLI arg-parser extraction~~ — `src/adapters/cli/arg-parser.ts` (ADR-0009) ✅
 10. ~~Replace FastMCP with MCP SDK~~ — `src/adapters/mcp/handler.ts`, unified server serves REST + MCP (ADR-0005) ✅
 11. ~~Decouple REST from Fastify~~ — `src/adapters/rest/handler.ts`, `openapi.ts` → `application/` (ADR-0005) ✅
+12. ~~Unified OpenAPI topology~~ — `basePath`, `extraPaths`, `mcpOpenApiPaths()` + Express integration test ✅
