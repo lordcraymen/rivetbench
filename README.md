@@ -1,6 +1,6 @@
 # RivetBench
 
-**RivetBench** is a lightweight TypeScript framework for building **triple‑exposed endpoints** that work over **REST**, **MCP (Model Context Protocol)**, and a **runtime‑generated CLI** — with **OpenAPI 3** documentation generated automatically.
+**RivetBench** is a lightweight TypeScript framework for building **triple-exposed endpoints** that work over **REST**, **MCP (Model Context Protocol)**, and a **runtime-generated CLI** — with **OpenAPI 3** documentation generated automatically.
 
 Write an endpoint once — expose it everywhere.
 
@@ -8,175 +8,149 @@ Write an endpoint once — expose it everywhere.
 
 ## Features
 
-* Unified endpoint definitions with **Zod** schemas for validation and typing
-* **Three transports from one definition**: REST routes, MCP tools, and CLI commands
-* **RPC over REST**: POST-only routes that dispatch by endpoint name (no resource modeling)
-* **Runtime‑generated CLI** with named parameters, JSON input, and raw/JSON output modes
-* Automatic generation of **OpenAPI 3** specs and built‑in **Swagger UI**
-* **Dynamic tool notifications**: signal clients when the tool list changes at runtime
-* **Tool enrichers**: transform the tool list per‑request based on session, transport, or app logic
-* **REST ETag support**: conditional requests (`If-None-Match`) on the tool listing endpoint
-* Type‑safe handlers shared across all transports
-* **Production-ready error handling** with custom error classes and consistent responses
-* **Structured logging** with Pino (MCP stdio-compatible)
+- Unified endpoint definitions with **Zod** schemas for validation and typing
+- **Three transports from one definition**: REST routes, MCP tools, and CLI commands
+- **RPC over REST**: POST-only routes dispatched by endpoint name (no resource modeling)
+- **Runtime-generated CLI** with named parameters, JSON input, and raw/JSON output modes
+- Automatic **OpenAPI 3** spec generation and built-in **Swagger UI**
+- **HTTP Transport**: delegate a CLI or MCP adapter to a remote RivetBench server with optional auto-spawn
+- **Dynamic tool notifications**: signal clients when the tool list changes at runtime
+- **Tool enrichers**: transform the tool list per-request based on session, transport, or app logic
+- **REST ETag support**: conditional requests (`If-None-Match`) on the tool listing endpoint
+- **Dependency injection**: typed custom context injected into every handler via the registry
+- **Production-ready error handling** with specific error classes and consistent responses
+- **Structured logging** with Pino (MCP stdio-compatible)
 
 ---
 
-## Tech Stack
+## Install
 
-* **Node.js 20+** / **TypeScript**
-* **Fastify** for REST APIs
-* **fastmcp** for MCP
-* **Zod** + **zod‑to‑openapi** for schema generation
-* **Pino** for structured logging
-* **Vitest** + **Cucumber** for testing
-
----
-
-## Project Layout
-
-```
-rivetbench/
-├─ src/
-│  ├─ core/                # framework core (endpoint factory, openapi, registry)
-│  ├─ server/              # rest + mcp servers
-│  ├─ endpoints/           # your endpoints live here
-│  └─ config/              # environment and startup settings
-├─ test/
-│  └─ sample.test.ts
-├─ package.json
-└─ README.md
+```bash
+npm install @lordcraymen/rivetbench
 ```
 
----
-
-## Example Endpoint (RPC style)
-
-```ts
-import { z } from "zod";
-import { makeEndpoint } from "../core/endpoint";
-
-const EchoInput = z.object({ message: z.string() });
-const EchoOutput = z.object({ echoed: z.string() });
-
-export default makeEndpoint({
-  name: "echo",
-  summary: "Echo a message",
-  input: EchoInput,
-  output: EchoOutput,
-  // handler is opaque; only input/output are exposed in MCP & OpenAPI
-  handler: async ({ input }) => ({ echoed: input.message })
-});
-```
+Requires **Node.js >= 20**.
 
 ---
 
 ## Quick Start
 
-```bash
-npm install
-npm run dev:rest     # Start REST + Swagger on :3000
-npm run dev:mcp      # Start MCP server (stdio transport)
-npm run dev:cli      # Launch the runtime-generated CLI
+### Define an endpoint
+
+```ts
+import { z } from 'zod';
+import { makeEndpoint } from '@lordcraymen/rivetbench';
+
+export const echo = makeEndpoint({
+  name: 'echo',
+  summary: 'Echo a message',
+  input:  z.object({ message: z.string() }),
+  output: z.object({ echoed:  z.string() }),
+  handler: async ({ input }) => ({ echoed: input.message }),
+});
 ```
 
-### REST Server
-Swagger UI → [http://localhost:3000/docs](http://localhost:3000/docs)
+### Expose via REST + MCP + CLI
 
-### MCP Server
+```ts
+import {
+  InMemoryEndpointRegistry,
+  createRestServer,
+  createCli,
+  loadConfig,
+} from '@lordcraymen/rivetbench';
+import { createMcpHandler } from '@lordcraymen/rivetbench/mcp';
+import { echo } from './endpoints/echo.js';
 
-**stdio transport (default)**:
-```bash
-npm run dev:mcp
-```
+const registry = new InMemoryEndpointRegistry();
+registry.register(echo);
+const config = loadConfig();
 
-**HTTP Stream transport (TCP)**:
-```bash
-RIVETBENCH_MCP_TRANSPORT=tcp RIVETBENCH_MCP_PORT=3001 npm run dev:mcp
-```
+// REST server (Swagger UI at http://localhost:3000/docs)
+const rest = await createRestServer({ registry, config });
+await rest.start();
 
-The MCP server exposes all registered endpoints as MCP tools with automatic schema validation.
+// MCP handler (attach to your MCP transport)
+const mcp = createMcpHandler({ registry, config });
 
-### CLI
-
-The CLI inspects the endpoint registry at startup so that available commands always mirror the REST and MCP transports. It provides flexible input methods and output formatting:
-
-#### Input Methods
-
-**Named Parameters** (recommended for most use cases):
-```bash
-# String parameters
-npm run dev:cli -- call echo -message "Hello World"
-
-# Automatic type parsing for numbers and booleans  
-npm run dev:cli -- call myfunc -count 42 -enabled true -rate 3.14
-
-# JSON objects and arrays as parameter values
-npm run dev:cli -- call complexFunc -config '{"timeout": 30}' -tags '["web", "api"]'
-```
-
-**JSON Input** (for complex nested objects):
-```bash
-npm run dev:cli -- call echo --params-json '{"message": "Hello World"}'
-```
-
-#### Output Formatting
-
-**JSON Output** (default):
-```bash
-npm run dev:cli -- call echo -message "Hello"
-# Output: {"echoed": "Hello"}
-```
-
-**Raw Output** (for scripting and simple values):
-```bash
-npm run dev:cli -- call echo -message "Hello" --raw
-# Output: Hello
-
-npm run dev:cli -- call uppercase -text "world" --raw
-# Output: WORLD
-```
-
-Raw output automatically extracts simple values from single-property objects. Complex objects fall back to JSON formatting even in raw mode.
-
-**Note**: CLI flags use double dashes (`--`) and endpoint parameters use single dash (`-`) to avoid naming collisions.
-
-#### Basic Commands
-
-```bash
-# List registered endpoints
-npm run dev:cli -- list
-
-# Get help
-npm run dev:cli -- --help  # Show detailed CLI usage and examples
-npm run dev:cli            # Also shows help when no command provided
+// CLI
+const cli = createCli({ registry, config });
+await cli.run(process.argv.slice(2));
 ```
 
 ---
 
-## Dynamic Tool Notifications
+## Core Concepts
 
-When your tool list changes at runtime (feature flags, RBAC, database‑driven endpoints), RivetBench can signal connected clients:
+### Endpoint definition
 
 ```ts
-// Signal all transports that the tool list has changed
+import { makeEndpoint } from '@lordcraymen/rivetbench';
+
+const greet = makeEndpoint({
+  name: 'greet',            // unique name — REST route, MCP tool, CLI command
+  summary: 'Greet a user',  // shown in OpenAPI, MCP tool list, and CLI help
+  description: 'Optional longer description',
+  input:  z.object({ name: z.string() }),
+  output: z.object({ greeting: z.string() }),
+  handler: async ({ input, config, ctx }) => ({ greeting: `Hello, ${input.name}!` }),
+});
+```
+
+### Registry
+
+```ts
+import { InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+
+const registry = new InMemoryEndpointRegistry();
+registry.register(greet);
+registry.get('greet');
+registry.list();
+registry.listEnriched({ transportType: 'rest' });
+
+registry.setContextFactory(() => ({ db: dbPool }));
+registry.setToolEnricher((tools, ctx) => tools);
+registry.signalToolsChanged();
+registry.onToolsChanged(() => {});
+// registry.etag    — current ETag string
+// registry.version — monotonic version counter
+```
+
+### Dependency Injection
+
+```ts
+interface AppCtx { db: DatabasePool; }
+
+const getUser = makeEndpoint<typeof Input, typeof Output, AppCtx>({
+  name: 'get-user',
+  summary: 'Get a user by id',
+  input:  z.object({ id: z.string() }),
+  output: z.object({ name: z.string() }),
+  handler: async ({ input, ctx }) => ctx.db.findUser(input.id),
+  //                          ^^^ fully typed as AppCtx
+});
+
+registry.setContextFactory(() => ({ db: dbPool }));
+```
+
+### Dynamic Tool Notifications
+
+Signal connected clients when endpoint availability changes:
+
+```ts
 registry.signalToolsChanged();
 ```
 
-| Transport | Notification mechanism |
-|-----------|------------------------|
-| **MCP**   | `notifications/tools/list_changed` sent to all active sessions automatically |
-| **REST**  | `GET /tools` returns an `ETag`; clients use `If-None-Match` for cache validation |
-| **CLI**   | Each invocation always sees the current tool list (no persistent session needed) |
+| Transport | Mechanism |
+|-----------|-----------|
+| **MCP**   | `notifications/tools/list_changed` sent to all active sessions |
+| **REST**  | `ETag` on `GET /tools`; clients use `If-None-Match` |
+| **CLI**   | Each invocation always reads the current list (stateless) |
 
 ### Tool Enrichers
 
-Optionally transform the tool list before serving — filter, annotate, or rewrite based on per‑request context:
-
 ```ts
 registry.setToolEnricher((tools, context) => {
-  // context.transportType is 'rest' | 'mcp' | 'cli'
-  // context.sessionId is available for MCP/REST
   if (context.transportType === 'rest') {
     return tools.filter(t => !t.name.startsWith('internal-'));
   }
@@ -186,315 +160,126 @@ registry.setToolEnricher((tools, context) => {
 
 ---
 
-## Programmatic Config Overrides
+## HTTP Transport
 
-`loadConfig()` accepts an optional `DeepPartial<ServerConfig>` that is deep-merged on top of the env-var defaults. Overrides always win:
+`createHttpTransport` returns a `TransportPort` that delegates invocations to a running RivetBench REST server over HTTP. No external dependencies — uses `node:net` and the global `fetch` API.
 
 ```ts
-import { loadConfig } from '@lordcraymen/rivetbench';
+import { createHttpTransport } from '@lordcraymen/rivetbench/http-transport';
+```
 
-// Default: reads env vars only
-const cfg1 = loadConfig();
+**Remote-only** (server already running):
+```ts
+const transport = createHttpTransport({ url: 'http://localhost:3000' });
+```
 
-// Override application name and MCP transport — everything else stays default
-const cfg2 = loadConfig({
-  application: { name: 'my-app' },
-  mcp: { transport: 'stdio' },
+**Auto-spawn** (start the server process if the port is not open on first use):
+```ts
+import { spawn } from 'node:child_process';
+
+const transport = createHttpTransport({
+  url: 'http://localhost:3000',
+  spawn: () => spawn('node', ['dist/server.js']),
+  spawnTimeoutMs: 15_000, // default
+  pollIntervalMs: 200,    // default
 });
 ```
 
-This is especially useful when embedding RivetBench as a library dependency, where env-var mutation is undesirable.
+**Use with CLI** (stateful server with runtime-generated CLI):
+```ts
+import { createCli, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+import { createHttpTransport } from '@lordcraymen/rivetbench/http-transport';
+import { spawn } from 'node:child_process';
+
+const transport = createHttpTransport({
+  url: 'http://localhost:3000',
+  spawn: () => spawn('node', ['dist/server.js']),
+});
+
+const cli = createCli({ registry, config, transport });
+await cli.run(process.argv.slice(2));
+```
+
+`Symbol.dispose` is implemented — using `using` or an explicit `.dispose()` kills the spawned child process on cleanup.
 
 ---
 
-## Custom Handler Context (Dependency Injection)
+## CLI
 
-Endpoints can receive a typed custom context object via the `ctx` field in &ZeroWidthSpace;`EndpointContext`. Register a context factory on the registry and all transports (REST, MCP, CLI) will call it automatically on every request:
+```bash
+# List registered endpoints
+rivetbench list
 
-```ts
-import { z } from 'zod';
-import { makeEndpoint, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
+# Call with named parameters
+rivetbench call echo -message "Hello World"
 
-// 1. Define your context type
-interface AppCtx {
-  db: DatabasePool;
-  relay: RelayService;
-}
+# Automatic type parsing for numbers and booleans
+rivetbench call myfunc -count 42 -enabled true
 
-// 2. Use it in endpoint definitions
-const getState = makeEndpoint<
-  typeof StateInput,
-  typeof StateOutput,
-  AppCtx
->({
-  name: 'getState',
-  summary: 'Get current state',
-  input: StateInput,
-  output: StateOutput,
-  handler: async ({ input, ctx }) => ctx.relay.dispatch('getState'),
-  //                       ^^^ fully typed as AppCtx
-});
+# JSON input for complex objects
+rivetbench call complexFunc --params-json '{"config": {"timeout": 30}}'
 
-// 3. Wire up the factory at registry level
-const registry = new InMemoryEndpointRegistry();
-registry.register(getState);
-registry.setContextFactory(() => ({
-  db: dbPool,
-  relay: relayInstance,
-}));
+# Raw output — extracts single-property values for scripting
+rivetbench call uppercase -text "world" --raw
+# Output: WORLD
 ```
 
-Endpoints that don't need custom context work exactly as before — `ctx` defaults to `undefined` and can be ignored.
+> CLI flags use `--` (double dash); endpoint parameters use `-` (single dash) to avoid collisions.
 
 ---
 
-## API Reference
+## Sub-path Exports
 
-### `makeEndpoint(definition): EndpointDefinition`
-
-Creates a type-safe endpoint definition. This is the primary entry point for defining endpoints that are automatically exposed via REST, MCP, and CLI.
-
-```ts
-import { makeEndpoint } from '@lordcraymen/rivetbench';
-import { z } from 'zod';
-
-const greet = makeEndpoint({
-  name: 'greet',              // unique endpoint name
-  summary: 'Greet a user',    // short description (used in OpenAPI + MCP)
-  description: 'Optional longer description',
-  input: z.object({ name: z.string() }),
-  output: z.object({ greeting: z.string() }),
-  handler: async ({ input, config, ctx }) => ({
-    greeting: `Hello, ${input.name}!`,
-  }),
-});
-```
-
-**Type parameters:**
-- `TInput` — Zod schema for the endpoint input
-- `TOutput` — Zod schema for the endpoint output
-- `TCtx` — Optional user-provided context type (defaults to `undefined`)
-
-### `EndpointDefinition<TInput, TOutput, TCtx>`
-
-The interface returned by `makeEndpoint`. Key fields:
-
-| Field         | Type                                        | Description                     |
-|---------------|---------------------------------------------|---------------------------------|
-| `name`        | `string`                                    | Unique endpoint name            |
-| `summary`     | `string`                                    | Short description               |
-| `description` | `string?`                                   | Optional long description       |
-| `input`       | `TInput` (Zod schema)                       | Input validation schema         |
-| `output`      | `TOutput` (Zod schema)                      | Output validation schema        |
-| `handler`     | `(ctx: EndpointContext) => Promise<TOutput>` | Async handler function          |
-
-### `EndpointContext<TInput, TOutput, TCtx>`
-
-The context object received by every endpoint handler:
-
-| Field    | Type                    | Description                                         |
-|----------|-------------------------|-----------------------------------------------------|
-| `input`  | `z.infer<TInput>`       | Validated and parsed input data                     |
-| `config` | `EndpointRuntimeConfig` | Runtime config (includes `requestId?: string`)      |
-| `ctx`    | `TCtx`                  | User-provided custom context (`undefined` by default) |
-
-### `InMemoryEndpointRegistry`
-
-Default in-memory registry that stores endpoint definitions and manages tool lifecycle:
-
-```ts
-import { InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
-
-const registry = new InMemoryEndpointRegistry();
-
-registry.register(greet);             // register an endpoint
-registry.get('greet');                // lookup by name
-registry.list();                      // all registered endpoints
-registry.listEnriched({ transportType: 'rest' }); // enriched tool list
-
-registry.setContextFactory(() => ({   // DI: inject custom context
-  db: dbPool,
-}));
-registry.setToolEnricher((tools, ctx) => tools); // per-request tool filtering
-registry.signalToolsChanged();        // notify connected clients
-registry.onToolsChanged(() => { });   // subscribe to changes
-registry.etag;                        // current ETag string
-registry.version;                     // monotonic version counter
-```
-
-### `loadConfig(overrides?): ServerConfig`
-
-Loads configuration from environment variables, optionally deep-merged with programmatic overrides:
-
-```ts
-import { loadConfig } from '@lordcraymen/rivetbench';
-
-const config = loadConfig();                          // env-var defaults only
-const config2 = loadConfig({ rest: { port: 4000 } }); // override REST port
-```
-
-**`ServerConfig` shape:**
-```ts
-interface ServerConfig {
-  rest:        { host: string; port: number };
-  mcp:         { transport: 'stdio' | 'tcp'; port?: number };
-  application: { name: string; version: string; description?: string };
-  logging:     { level: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'; pretty: boolean };
-  environment: 'development' | 'production' | 'test';
-}
-```
-
-### `createRestServer(options): Promise<{ fastify, start() }>`
-
-Creates a Fastify-based REST server with Swagger UI, ETag caching, and error handling:
-
-```ts
-import { createRestServer, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
-
-const config = loadConfig();
-const registry = new InMemoryEndpointRegistry();
-registry.register(greet);
-
-const server = await createRestServer({ registry, config });
-
-// server.fastify — the underlying Fastify instance (for custom routes, plugins, etc.)
-// server.start() — binds to config.rest.host:config.rest.port and returns the Fastify instance
-await server.start();
-```
-
-**Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
-**Returns:** `{ fastify: FastifyInstance; start(): Promise<FastifyInstance> }`
-
-### `createMcpServer(options): McpServerHandle`
-
-Creates an MCP server **without** starting it. Use this when you need explicit lifecycle control (graceful shutdown, testing, restart):
-
-```ts
-import { createMcpServer, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
-
-const config = loadConfig({ mcp: { transport: 'stdio' } });
-const registry = new InMemoryEndpointRegistry();
-registry.register(greet);
-
-const handle = createMcpServer({ registry, config });
-await handle.start();
-// later…
-await handle.stop();
-```
-
-**Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
-**Returns:** `McpServerHandle` — `{ start(): Promise<void>; stop(): Promise<void>; server: FastMCP }`
-
-### `startMcpServer(options): Promise<McpServerHandle>`
-
-Convenience wrapper that creates **and starts** the MCP server in one call:
-
-```ts
-import { startMcpServer, loadConfig, InMemoryEndpointRegistry } from '@lordcraymen/rivetbench';
-
-const config = loadConfig({ mcp: { transport: 'stdio' } });
-const registry = new InMemoryEndpointRegistry();
-registry.register(greet);
-
-const handle = await startMcpServer({ registry, config });
-// handle.stop() is available for graceful shutdown
-```
-
-**Options:** `{ registry: EndpointRegistry; config: ServerConfig }`  
-**Returns:** `McpServerHandle`
-
-### Complete Programmatic Embedding Example
-
-```ts
-import { z } from 'zod';
-import {
-  makeEndpoint,
-  InMemoryEndpointRegistry,
-  createRestServer,
-  startMcpServer,
-  loadConfig,
-} from '@lordcraymen/rivetbench';
-
-// 1. Define endpoints
-const greet = makeEndpoint({
-  name: 'greet',
-  summary: 'Greet a user',
-  input: z.object({ name: z.string() }),
-  output: z.object({ greeting: z.string() }),
-  handler: async ({ input }) => ({ greeting: `Hello, ${input.name}!` }),
-});
-
-// 2. Create registry and register endpoints
-const registry = new InMemoryEndpointRegistry();
-registry.register(greet);
-
-// 3. Load config with programmatic overrides
-const config = loadConfig({
-  application: { name: 'my-app', version: '1.0.0' },
-  rest: { port: 4000 },
-});
-
-// 4. Start REST server (Swagger UI at http://localhost:4000/docs)
-const rest = await createRestServer({ registry, config });
-await rest.start();
-
-// 5. Optionally start MCP server alongside REST
-const mcpConfig = loadConfig({
-  ...config,
-  mcp: { transport: 'tcp', port: 4001 },
-});
-await startMcpServer({ registry, config: mcpConfig });
-```
-
-### Sub-Export: `@lordcraymen/rivetbench/core`
-
-For modules that only define endpoints, import from the lightweight `core` sub-export. This avoids pulling in Fastify, fastmcp, and Pino as transitive dependencies:
-
-```ts
-// Only imports endpoint factory, registry, and error classes — no transport deps
-import { makeEndpoint, type EndpointDefinition } from '@lordcraymen/rivetbench/core';
-```
-
-**Included in `core`:** `makeEndpoint`, `EndpointDefinition`, `EndpointContext`, `EndpointHandler`, `AnyEndpointDefinition`, `EndpointRuntimeConfig`, `ContextFactory`, `EndpointRegistry`, `InMemoryEndpointRegistry`, `ToolEnricher`, `ToolEnricherContext`, `ToolsChangedListener`, and all error classes (`RivetBenchError`, `ValidationError`, `EndpointNotFoundError`, `InternalServerError`, `ConfigurationError`, `isRivetBenchError`, `toRivetBenchError`).
-
-**NOT in `core`:** `createRestServer`, `startMcpServer`, `loadConfig`, `createLogger`, `createCli`.
-
-### MCP Tool Naming Guidance
-
-Use **lowercase alphanumeric** names with **hyphens** or **underscores** for endpoints:
-
-```
-✅  get-user, send_email, calculate-tax
-❌  graph.getState, GetUser, my tool
-```
-
-Dots in MCP tool names are handled inconsistently by some clients. `makeEndpoint` will emit a warning to stderr when a name doesn't follow the recommended pattern (`/^[a-z0-9][a-z0-9_-]*$/`). See the [MCP Guide](docs/MCP_GUIDE.md) for details.
+| Import path | Contents |
+|-------------|----------|
+| `@lordcraymen/rivetbench` | Full bundle — all adapters |
+| `@lordcraymen/rivetbench/core` | `makeEndpoint`, `InMemoryEndpointRegistry`, error classes (no transport deps) |
+| `@lordcraymen/rivetbench/fastify` | `createRestServer`, `rivetBenchPlugin` |
+| `@lordcraymen/rivetbench/rest` | `createRestHandler` (framework-agnostic) |
+| `@lordcraymen/rivetbench/mcp` | `createMcpHandler`, `mcpOpenApiPaths` |
+| `@lordcraymen/rivetbench/cli` | `createCli` |
+| `@lordcraymen/rivetbench/openapi` | `buildOpenApiDocument` |
+| `@lordcraymen/rivetbench/pino` | `createLogger`, `createPinoLoggerPort` |
+| `@lordcraymen/rivetbench/http-transport` | `createHttpTransport` |
 
 ---
 
-## RPC‑over‑REST semantics
+## Configuration
 
-* **POST‑only**: Each call is `POST /rpc/:name` (default) or `POST /tools/:name`.
-* **Stateless**: All data comes from the request body; no server session required.
-* **Opaque handler**: Only the Zod input/output are published (MCP & OpenAPI). The implementation never leaks.
-* **OpenAPI**: Paths are generated for each endpoint as `POST /rpc/{name}` with `requestBody` = input schema and response = output schema.
-* **MCP parity**: The same definition becomes an MCP tool with matching input/output JSON Schema.
+`loadConfig(overrides?)` reads environment variables and deep-merges optional programmatic overrides:
 
-### Optional conventions
+```ts
+const config = loadConfig({ rest: { port: 4000 } });
+```
 
-* **Idempotency**: Support `Idempotency-Key` header for safe retries of POST.
-* **Long‑running jobs**: If needed, return an `operationId` in the output; a separate `status` endpoint/tool can be defined like any other RPC (kept optional).
+| Env var | Default | Description |
+|---------|---------|-------------|
+| `RIVETBENCH_REST_HOST` | `0.0.0.0` | REST listen host |
+| `RIVETBENCH_REST_PORT` | `3000` | REST listen port |
+| `RIVETBENCH_MCP_TRANSPORT` | `stdio` | `stdio` or `tcp` |
+| `RIVETBENCH_MCP_PORT` | `3001` | MCP TCP port |
+| `RIVETBENCH_APP_NAME` | `rivetbench` | Application name |
+| `RIVETBENCH_APP_VERSION` | `1.0.0` | Application version |
+| `RIVETBENCH_LOG_LEVEL` | `info` | Pino log level |
+| `RIVETBENCH_LOG_PRETTY` | `false` | Pretty-print logs |
+| `NODE_ENV` | `development` | Sets `environment` field |
 
 ---
 
-## Documentation
+## Benchmark
 
-- **[Development Workflow](WORKFLOW.md)** - Daily workflow, branch management, and best practices
-- **[Error Handling & Logging](docs/ERROR_HANDLING.md)** - Error classes, logging configuration, and best practices
-- **[MCP Implementation Guide](docs/MCP_GUIDE.md)** - Complete guide to MCP server usage, configuration, and integration
-- **[BDD Testing Guide](docs/BDD_TESTING.md)** - Cucumber/BDD testing documentation and examples
-- **[Contributing](CONTRIBUTING.md)** - Development workflow, branch strategy, and contribution guidelines
-- **[Roadmap](ROADMAP.md)** - Feature plans and development priorities
+In-process vs HTTP server adapters (20 concurrent requests per iteration, unique payloads, response-validated):
+
+| Transport | ops/sec |
+|-----------|--------:|
+| In-process | ~3,595 |
+| Koa | ~101 |
+| Fastify | ~88 |
+| Hono | ~79 |
+| Node `http` | ~70 |
+| Express | ~62 |
+
+Run: `npm run bench`
 
 ---
 
@@ -502,21 +287,52 @@ Dots in MCP tool names are handled inconsistently by some clients. `makeEndpoint
 
 | Capability | REST | MCP | CLI |
 |---|---|---|---|
-| Input validation (Zod) | Yes | Yes | Yes |
-| Output validation (Zod) | Yes | Yes | Yes |
-| Request ID tracing | Yes | Yes | Yes |
+| Input validation (Zod) | ✅ | ✅ | ✅ |
+| Output validation (Zod) | ✅ | ✅ | ✅ |
+| Request ID tracing | ✅ | ✅ | ✅ |
 | Error handling | Structured JSON | Structured JSON | Stderr + exit code |
 | Tool discovery | `GET /tools`, OpenAPI | `tools/list` | `rivetbench list` |
 | Change notification | ETag / `If-None-Match` | `notifications/tools/list_changed` | N/A (stateless) |
-| Tool enricher | Yes | Yes | Yes |
+| Tool enricher | ✅ | ✅ | ✅ |
+
+---
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                         Adapters                             │
+│  REST (Fastify)  │  MCP Handler  │  CLI  │  HTTP Transport  │
+└──────────┬───────────────┬────────────────────────┬──────────┘
+           │               │                        │
+┌──────────▼───────────────▼────────────────────────▼──────────┐
+│                     Application Layer                         │
+│         invokeEndpoint · listEndpoints · createTransportPort  │
+└──────────────────────────┬───────────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────────┐
+│                       Domain Layer                            │
+│     makeEndpoint · InMemoryEndpointRegistry · Errors         │
+└──────────────────────────────────────────────────────────────┘
+         ↑                                       ↑
+   TransportPort                            LoggerPort
+  (ports/transport)                       (ports/logger)
+```
+
+Hexagonal architecture (ADR-0001). Domain has zero framework dependencies. Adapters depend on domain types — never the reverse. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+---
+
+## RPC-over-REST semantics
+
+- **POST-only**: every call is `POST /rpc/:name`
+- **Stateless**: all data comes from the request body; no server session
+- **Opaque handler**: only the Zod input/output are published; implementation never leaks
+- **OpenAPI**: each endpoint becomes `POST /rpc/{name}` with request body = input schema
+- **MCP parity**: same definition becomes an MCP tool with matching JSON Schema
 
 ---
 
 ## License
 
 MIT
-
----
-
-**RivetBench** — forge and test your API connections.
-

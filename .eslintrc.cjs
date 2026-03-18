@@ -10,7 +10,7 @@ module.exports = {
     node: true,
     es2022: true
   },
-  ignorePatterns: ['dist/'],
+  ignorePatterns: ['dist/', 'example/'],
   overrides: [
     // ADR-0001: Domain layer — zero infrastructure imports
     {

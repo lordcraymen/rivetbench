@@ -1,6 +1,6 @@
 {
   "name": "@lordcraymen/rivetbench",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Lightweight TypeScript framework for dual-exposed endpoints (REST + MCP).",
   "license": "MIT",
   "repository": {
@@ -43,6 +43,10 @@
     "./pino": {
       "import": "./dist/adapters/pino/logger.js",
       "types": "./dist/adapters/pino/logger.d.ts"
+    },
+    "./http-transport": {
+      "import": "./dist/adapters/http-transport/index.js",
+      "types": "./dist/adapters/http-transport/index.d.ts"
     }
   },
   "bin": {
@@ -64,6 +68,7 @@
     "test:bdd": "NODE_OPTIONS=\"--import tsx/esm\" npx cucumber-js test/features --import \"test/steps/*.ts\" --tags \"not @wip\"",
     "test:bdd:all": "NODE_OPTIONS=\"--import tsx/esm\" npx cucumber-js test/features --import \"test/steps/*.ts\"",
     "test:bdd:wip": "NODE_OPTIONS=\"--import tsx/esm\" npx cucumber-js test/features --import \"test/steps/*.ts\" --tags \"@wip\"",
+    "bench": "vitest bench",
     "test:ci": "npm run test:unit && npm run test:bdd",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -104,15 +109,20 @@
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.7.0",
+    "@hono/node-server": "^1.19.11",
+    "@koa/bodyparser": "^6.1.0",
     "@lordcraymen/adr-toolkit": "^3.0.0",
     "@types/express": "^5.0.6",
+    "@types/koa": "^3.0.1",
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^7.6.0",
     "@typescript-eslint/parser": "^7.6.0",
     "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "express": "^5.2.1",
+    "hono": "^4.12.8",
     "husky": "^9.1.7",
+    "koa": "^3.1.2",
     "lint-staged": "^16.2.3",
     "tsx": "^4.7.1",
     "typescript": "^5.4.0",

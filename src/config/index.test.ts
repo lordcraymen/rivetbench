@@ -39,7 +39,7 @@ describe('loadConfig', () => {
     const cfg = loadConfig({ application: { name: 'my-app' } });
 
     expect(cfg.application.name).toBe('my-app');
-    expect(cfg.application.version).toBe('0.9.0');
+    expect(cfg.application.version).toBe('1.0.0');
     expect(cfg.application.description).toBe('Dual exposed RPC endpoints for REST and MCP.');
   });
 
