@@ -1,10 +1,11 @@
 import Fastify from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import type { Logger as PinoLogger } from 'pino';
 import { buildOpenApiDocument } from './openapi.js';
 import { EndpointRegistry } from '../../domain/registry.js';
 import type { ServerConfig } from '../../config/index.js';
-import { createLogger, createPinoLoggerPort } from '../pino/logger.js';
+import type { LoggerPort } from '../../ports/logger.js';
 import { createErrorHandler, createNotFoundHandler } from './error-handler.js';
 import { invokeEndpoint } from '../../application/invoke-endpoint.js';
 import { listEndpoints } from '../../application/list-endpoints.js';
@@ -12,10 +13,13 @@ import { listEndpoints } from '../../application/list-endpoints.js';
 export interface RestServerOptions {
   registry: EndpointRegistry;
   config: ServerConfig;
+  /** Pino logger instance for Fastify internals. Injected by composition root. */
+  logger: PinoLogger;
+  /** Port-based logger for application service calls. Injected by composition root. */
+  loggerPort: LoggerPort;
 }
 
-export const createRestServer = async ({ registry, config }: RestServerOptions) => {
-  const logger = createLogger(config);
+export const createRestServer = async ({ registry, config, logger, loggerPort }: RestServerOptions) => {
 
   const fastify = Fastify({
     loggerInstance: logger,
@@ -78,8 +82,6 @@ export const createRestServer = async ({ registry, config }: RestServerOptions) 
       .header('Cache-Control', 'no-cache')
       .send(tools);
   });
-
-  const loggerPort = createPinoLoggerPort(logger);
 
   fastify.post('/rpc/:name', async (request) => {
     const endpointName = (request.params as { name: string }).name;

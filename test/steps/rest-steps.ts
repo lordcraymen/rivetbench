@@ -3,6 +3,7 @@ import { RivetBenchWorld } from './world.js';
 import { createRestServer } from '../../src/adapters/fastify/server.js';
 import { loadConfig } from '../../src/config/index.js';
 import { createDefaultRegistry } from '../../src/endpoints/index.js';
+import { createTestLogger, noopLoggerPort } from '../helpers/test-logger.js';
 
 /**
  * Step: Given the REST server is running
@@ -11,7 +12,7 @@ import { createDefaultRegistry } from '../../src/endpoints/index.js';
 Given('the REST server is running', async function (this: RivetBenchWorld) {
   const config = loadConfig();
   const registry = createDefaultRegistry();
-  const server = await createRestServer({ registry, config });
+  const server = await createRestServer({ registry, config, logger: createTestLogger(), loggerPort: noopLoggerPort });
   
   // Start on random port for testing
   await server.fastify.listen({ host: '127.0.0.1', port: 0 });

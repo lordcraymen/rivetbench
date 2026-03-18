@@ -5,6 +5,7 @@ import { createRestServer } from '../../src/adapters/fastify/server.js';
 import { loadConfig } from '../../src/config/index.js';
 import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
 import { makeEndpoint } from '../../src/domain/endpoint.js';
+import { createTestLogger, noopLoggerPort } from '../helpers/test-logger.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,7 +35,7 @@ function createRequestIdRegistry(world: RivetBenchWorld) {
 Given('an endpoint that captures the request ID from context', async function (this: RivetBenchWorld) {
   const config = loadConfig();
   const registry = createRequestIdRegistry(this);
-  const server = await createRestServer({ registry, config });
+  const server = await createRestServer({ registry, config, logger: createTestLogger(), loggerPort: noopLoggerPort });
   await server.fastify.listen({ host: '127.0.0.1', port: 0 });
   this.restServer = server.fastify;
   const address = server.fastify.server.address();

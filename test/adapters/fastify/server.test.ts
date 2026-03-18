@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
-import { createRestServer } from '../../src/adapters/fastify/server.js';
-import { loadConfig } from '../../src/config/index.js';
-import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
-import { makeEndpoint } from '../../src/domain/endpoint.js';
+import { createRestServer } from '../../../src/adapters/fastify/server.js';
+import { loadConfig } from '../../../src/config/index.js';
+import { InMemoryEndpointRegistry } from '../../../src/domain/registry.js';
+import { makeEndpoint } from '../../../src/domain/endpoint.js';
+import { createTestLogger, noopLoggerPort } from '../../helpers/test-logger.js';
 import type { FastifyInstance } from 'fastify';
 
 describe('REST Server Integration', () => {
@@ -27,7 +28,7 @@ describe('REST Server Integration', () => {
       handler: async ({ input }) => ({ echoed: input.message })
     }));
     
-    server = await createRestServer({ registry, config });
+    server = await createRestServer({ registry, config, logger: createTestLogger(), loggerPort: noopLoggerPort });
     fastify = server.fastify;
     
     // Start server on a random port for testing

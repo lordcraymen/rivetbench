@@ -22,7 +22,7 @@ const loggerPort = createPinoLoggerPort(logger);
 const registry = createDefaultRegistry();
 
 // Start REST server
-const restServer = await createRestServer({ registry, config });
+const restServer = await createRestServer({ registry, config, logger, loggerPort });
 await restServer.start();
 
 logger.info(

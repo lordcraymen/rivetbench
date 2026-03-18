@@ -4,6 +4,7 @@ import { createRestServer } from '../../src/adapters/fastify/server.js';
 import { loadConfig } from '../../src/config/index.js';
 import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
 import { makeEndpoint } from '../../src/domain/endpoint.js';
+import { createTestLogger, noopLoggerPort } from '../helpers/test-logger.js';
 
 describe('Request ID Parity Across Transports', () => {
   describe('REST Transport', () => {
@@ -28,7 +29,7 @@ describe('Request ID Parity Across Transports', () => {
         }
       }));
       
-      server = await createRestServer({ registry, config });
+      server = await createRestServer({ registry, config, logger: createTestLogger(), loggerPort: noopLoggerPort });
       fastify = server.fastify;
       await fastify.listen({ host: '127.0.0.1', port: 0 });
     });

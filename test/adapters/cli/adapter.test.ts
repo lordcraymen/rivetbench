@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Writable } from 'node:stream';
-import { loadConfig } from '../../src/config/index.js';
-import { createDefaultRegistry } from '../../src/endpoints/index.js';
-import { createCli } from '../../src/adapters/cli/adapter.js';
+import { loadConfig } from '../../../src/config/index.js';
+import { createDefaultRegistry } from '../../../src/endpoints/index.js';
+import { createCli } from '../../../src/adapters/cli/adapter.js';
 
 const createMemoryStream = () => {
   let buffer = '';

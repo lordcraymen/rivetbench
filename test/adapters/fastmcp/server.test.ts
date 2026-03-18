@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { z } from 'zod';
-import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
-import { makeEndpoint } from '../../src/domain/endpoint.js';
+import { InMemoryEndpointRegistry } from '../../../src/domain/registry.js';
+import { makeEndpoint } from '../../../src/domain/endpoint.js';
 
 describe('MCP Server', () => {
   let registry: InMemoryEndpointRegistry;
@@ -218,8 +218,8 @@ describe('MCP Server', () => {
 
   describe('createMcpServer lifecycle handle', () => {
     it('should return a handle with start, stop, and server', async () => {
-      const { createMcpServer } = await import('../../src/adapters/fastmcp/server.js');
-      const config = (await import('../../src/config/index.js')).loadConfig({
+      const { createMcpServer } = await import('../../../src/adapters/fastmcp/server.js');
+      const config = (await import('../../../src/config/index.js')).loadConfig({
         mcp: { transport: 'stdio' },
       });
 
@@ -233,8 +233,8 @@ describe('MCP Server', () => {
     });
 
     it('should expose the underlying FastMCP instance via server', async () => {
-      const { createMcpServer } = await import('../../src/adapters/fastmcp/server.js');
-      const config = (await import('../../src/config/index.js')).loadConfig({
+      const { createMcpServer } = await import('../../../src/adapters/fastmcp/server.js');
+      const config = (await import('../../../src/config/index.js')).loadConfig({
         mcp: { transport: 'stdio' },
       });
 
