@@ -13,9 +13,9 @@ RivetBench adopts a **hexagonal architecture** (also known as *Ports & Adapters*
                     └──────┬──────────────┬──────────────┬────────┘
                            │              │              │
               ┌────────────▼──┐   ┌───────▼───────┐  ┌──▼─────────────┐
-              │  Fastify       │   │  FastMCP       │  │  CLI            │
-              │  Adapter       │   │  Adapter       │  │  Adapter        │
-              │  (driven)      │   │  (driven)      │  │  (driven)       │
+              │  Fastify       │   │  MCP SDK       │  │  CLI            │
+              │  Adapter       │   │  Handler       │  │  Adapter        │
+              │  (REST + MCP)  │   │  (driven)      │  │  (driven)       │
               └────────┬───────┘   └───────┬───────┘  └──┬──────────────┘
                        │                   │              │
               ─────────▼───────────────────▼──────────────▼──────────────
@@ -141,9 +141,9 @@ Infrastructure implementations of ports. Each adapter is a **plugin** — you ca
 
 | Adapter | Port | Framework |
 |---------|------|-----------|
-| `adapters/fastify/` | TransportPort (driving) | Fastify |
+| `adapters/fastify/` | TransportPort (driving) | Fastify (REST + MCP) |
 | `adapters/express/` | TransportPort (driving) | Express *(future)* |
-| `adapters/fastmcp/` | TransportPort (driving) | FastMCP |
+| `adapters/mcp/` | TransportPort (driving) | @modelcontextprotocol/sdk |
 | `adapters/cli/` | TransportPort (driving) | Node.js process |
 | `adapters/pino/` | LoggerPort (driven) | Pino |
 
@@ -160,9 +160,9 @@ const app = express();
 app.use('/api', createRivetBenchExpressRouter({ registry, logger }));
 app.listen(3000);
 
-// Embedded MCP on existing Hono server
-const app = new Hono();
-app.route('/mcp', createMcpHonoRoute({ registry, logger }));
+// MCP mounted on existing Fastify server (current behavior)
+const app = Fastify();
+await app.register(rivetBenchPlugin, { registry, logger }); // REST + MCP at /mcp
 ```
 
 ### 5. Composition Root (`src/composition/`)
@@ -217,8 +217,8 @@ src/
 │   │   ├── server.ts          # createFastifyServer()
 │   │   ├── error-handler.ts   # Fastify-specific error mapping
 │   │   └── openapi.ts         # OpenAPI generation (Fastify-specific)
-│   ├── fastmcp/               # FastMCP adapter
-│   │   └── server.ts          # createMcpServer()
+│   ├── mcp/                   # MCP SDK adapter (mounted on Fastify at /mcp)
+│   │   └── handler.ts         # createMcpHandler()
 │   ├── cli/                   # CLI adapter
 │   │   ├── adapter.ts         # createCli()
 │   │   └── arg-parser.ts      # CLI argument parsing
@@ -281,7 +281,7 @@ The application service depends on `LoggerPort` (abstraction), not on Pino (conc
 
 ## Migration Path (Complete)
 
-All migration steps have been completed across Phases 1–6:
+All migration steps have been completed across Phases 1–7:
 
 1. ~~Extract application service~~ — `src/application/invoke-endpoint.ts` + `list-endpoints.ts` ✅
 2. ~~Extract logger port~~ — `LoggerPort` in `src/ports/logger.ts`, Pino adapter ✅
@@ -292,3 +292,4 @@ All migration steps have been completed across Phases 1–6:
 7. ~~Move OpenAPI~~ — `adapters/fastify/openapi.ts` ✅
 8. ~~TransportPort driving interface~~ — `src/ports/transport.ts` + plugin pattern for all adapters ✅
 9. ~~CLI arg-parser extraction~~ — `src/adapters/cli/arg-parser.ts` (ADR-0009) ✅
+10. ~~Replace FastMCP with MCP SDK~~ — `src/adapters/mcp/handler.ts`, unified server serves REST + MCP (ADR-0005) ✅

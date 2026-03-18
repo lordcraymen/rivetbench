@@ -4,6 +4,26 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## March 2026 — Phase 7: Unified Server (MCP SDK)
+
+### FastMCP owns its HTTP server — can't embed it
+
+FastMCP (via `mcp-proxy`) calls `http.createServer()` + `.listen()` internally. To mount MCP as a sub-route on an existing server, use `@modelcontextprotocol/sdk` directly with `StreamableHTTPServerTransport`.
+
+### MCP SDK requires per-session server instances
+
+Each MCP session needs its own `McpServer` + `StreamableHTTPServerTransport` pair. Track sessions in a `Map<sessionId, {server, transport}>` and clean up on `transport.onclose`.
+
+### Fastify `reply.hijack()` delegates to raw Node.js streams
+
+`reply.hijack()` tells Fastify to stop managing the response. The MCP transport then writes directly to `reply.raw` (a Node.js `ServerResponse`). Works correctly with `fastify.inject()` for testing.
+
+### MCP SDK Accept header is strict
+
+The SDK requires both `application/json` AND `text/event-stream` in the Accept header. Returns 406 otherwise — even `*/*` doesn't satisfy it. Always responds with SSE format.
+
+---
+
 ## March 2026 — Hexagonal Refactor (Phase 6: TransportPort & Plugin Pattern)
 
 ### Port types must be self-contained to satisfy lint boundaries
