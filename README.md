@@ -58,25 +58,32 @@ import {
   createRestServer,
   createCli,
   loadConfig,
+  createLogger,
+  createPinoLoggerPort,
+  createTransportPort,
 } from '@lordcraymen/rivetbench';
-import { createMcpHandler } from '@lordcraymen/rivetbench/mcp';
 import { echo } from './endpoints/echo.js';
 
 const registry = new InMemoryEndpointRegistry();
 registry.register(echo);
 const config = loadConfig();
+const logger = createLogger(config);
+const loggerPort = createPinoLoggerPort(logger);
+const transport = createTransportPort(registry, loggerPort);
 
-// REST server (Swagger UI at http://localhost:3000/docs)
-const rest = await createRestServer({ registry, config });
+// REST + MCP server — Swagger UI at /docs, MCP at /mcp
+const rest = await createRestServer({ registry, config, logger, loggerPort, transport });
 await rest.start();
+// → REST:    POST http://localhost:3000/rpc/echo
+// → MCP:    POST http://localhost:3000/mcp  (Streamable HTTP)
+// → Swagger: http://localhost:3000/docs
 
-// MCP handler (attach to your MCP transport)
-const mcp = createMcpHandler({ registry, config });
-
-// CLI
-const cli = createCli({ registry, config });
+// CLI (same endpoints, same validation)
+const cli = createCli({ registry, config, transport });
 await cli.run(process.argv.slice(2));
 ```
+
+> **Key:** `createRestServer()` mounts MCP automatically at `/mcp`. No separate MCP setup required.
 
 ---
 
@@ -225,6 +232,62 @@ rivetbench call uppercase -text "world" --raw
 ```
 
 > CLI flags use `--` (double dash); endpoint parameters use `-` (single dash) to avoid collisions.
+
+---
+
+## MCP Server
+
+`createRestServer()` serves MCP natively at `/mcp` via [Streamable HTTP](https://spec.modelcontextprotocol.io/specification/2025-03-26/basic/transports/#streamable-http) — no extra setup needed. Every registered endpoint is automatically exposed as an MCP tool.
+
+### VS Code integration
+
+Point VS Code directly at the running server — no stdio bridge required:
+
+```jsonc
+// .vscode/mcp.json
+{
+  "servers": {
+    "my-app": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+Start the server (`npm run dev:rest` or your composition), then reload the MCP server list in VS Code.
+
+### Standalone MCP HTTP server (no Fastify)
+
+If you don't need REST/Swagger and want a minimal MCP-only HTTP server:
+
+```ts
+import http from 'node:http';
+import { createMcpHandler } from '@lordcraymen/rivetbench/mcp';
+
+const handler = createMcpHandler({ transport, registry, logger: loggerPort, application: config.application });
+const server = http.createServer((req, res) => handler.handleRequest(req, res));
+server.listen(3001);
+// → MCP available at http://localhost:3001/mcp
+```
+
+### Stdio bridge (for environments that require stdio)
+
+Some MCP clients only support stdio transport. Use `createHttpTransport` with auto-spawn + an stdio↔HTTP bridge like [`mcp-proxy`](https://www.npmjs.com/package/mcp-proxy):
+
+```ts
+import { createHttpTransport } from '@lordcraymen/rivetbench/http-transport';
+import { spawn } from 'node:child_process';
+
+// Auto-spawn the server if not already running
+const transport = createHttpTransport({
+  url: 'http://localhost:3000',
+  spawn: () => spawn('node', ['dist/server.js']),
+});
+// Then bridge stdio ↔ HTTP MCP at http://localhost:3000/mcp
+```
+
+See [`example/webmcp-bridge`](example/webmcp-bridge/) for a complete stdio bridge implementation.
 
 ---
 
