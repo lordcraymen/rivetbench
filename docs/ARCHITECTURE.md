@@ -141,8 +141,9 @@ Infrastructure implementations of ports. Each adapter is a **plugin** — you ca
 
 | Adapter | Port | Framework |
 |---------|------|-----------|
-| `adapters/fastify/` | TransportPort (driving) | Fastify (REST + MCP) |
-| `adapters/express/` | TransportPort (driving) | Express *(future)* |
+| `adapters/fastify/` | TransportPort (driving) | Fastify (Swagger UI convenience) |
+| `adapters/rest/` | TransportPort (driving) | Raw Node.js http (framework-agnostic) |
+| `adapters/express/` | TransportPort (driving) | Express *(future — trivial)* |
 | `adapters/mcp/` | TransportPort (driving) | @modelcontextprotocol/sdk |
 | `adapters/cli/` | TransportPort (driving) | Node.js process |
 | `adapters/pino/` | LoggerPort (driven) | Pino |
@@ -206,7 +207,8 @@ src/
 ├── application/               # Use cases — orchestration layer
 │   ├── invoke-endpoint.ts     # validate → call → validate pipeline
 │   ├── list-endpoints.ts      # list + enrich endpoints
-│   └── create-transport-port.ts # Factory wiring app services → TransportPort
+│   ├── create-transport-port.ts # Factory wiring app services → TransportPort
+│   └── openapi.ts             # OpenAPI 3.0.3 document generation from endpoints
 │
 ├── ports/                     # Port interfaces
 │   ├── logger.ts              # LoggerPort interface
@@ -217,6 +219,8 @@ src/
 │   │   ├── server.ts          # createFastifyServer()
 │   │   ├── error-handler.ts   # Fastify-specific error mapping
 │   │   └── openapi.ts         # OpenAPI generation (Fastify-specific)
+│   ├── rest/                  # Framework-agnostic REST handler
+│   │   └── handler.ts         # createRestHandler()
 │   ├── mcp/                   # MCP SDK adapter (mounted on Fastify at /mcp)
 │   │   └── handler.ts         # createMcpHandler()
 │   ├── cli/                   # CLI adapter
@@ -293,3 +297,4 @@ All migration steps have been completed across Phases 1–7:
 8. ~~TransportPort driving interface~~ — `src/ports/transport.ts` + plugin pattern for all adapters ✅
 9. ~~CLI arg-parser extraction~~ — `src/adapters/cli/arg-parser.ts` (ADR-0009) ✅
 10. ~~Replace FastMCP with MCP SDK~~ — `src/adapters/mcp/handler.ts`, unified server serves REST + MCP (ADR-0005) ✅
+11. ~~Decouple REST from Fastify~~ — `src/adapters/rest/handler.ts`, `openapi.ts` → `application/` (ADR-0005) ✅

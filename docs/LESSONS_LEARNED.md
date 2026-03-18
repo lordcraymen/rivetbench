@@ -4,6 +4,18 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## March 2026 — Phase 8: Decouple REST from Fastify
+
+### OpenAPI generation is application-level, not adapter-level
+
+The OpenAPI spec describes the endpoint surface in a standard format — the same role MCP plays for LLMs. It depends only on domain types (`AnyEndpointDefinition`) and belongs in `application/openapi.ts`, not inside a framework adapter.
+
+### REST handler follows the same pattern as MCP handler
+
+`createRestHandler()` returns a `handleRequest(req, res, body?)` that works on raw `IncomingMessage`/`ServerResponse`. Fastify delegates via `reply.hijack()`. An Express adapter would just call `handler.handleRequest(req, res, req.body)` — zero adaptation needed.
+
+---
+
 ## March 2026 — Phase 7: Unified Server (MCP SDK)
 
 ### FastMCP owns its HTTP server — can't embed it
