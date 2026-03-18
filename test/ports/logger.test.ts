@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createLogger, createPinoLoggerPort } from '../../src/core/logger.js';
+import { createLogger, createPinoLoggerPort } from '../../src/adapters/pino/logger.js';
 import { loadConfig } from '../../src/config/index.js';
 import type { LoggerPort } from '../../src/ports/logger.js';
 

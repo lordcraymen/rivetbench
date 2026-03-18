@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
-import { createRestServer } from '../../src/server/rest.js';
+import { createRestServer } from '../../src/adapters/fastify/server.js';
 import { loadConfig } from '../../src/config/index.js';
 import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
 import { makeEndpoint } from '../../src/domain/endpoint.js';

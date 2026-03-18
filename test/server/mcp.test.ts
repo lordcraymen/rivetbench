@@ -218,7 +218,7 @@ describe('MCP Server', () => {
 
   describe('createMcpServer lifecycle handle', () => {
     it('should return a handle with start, stop, and server', async () => {
-      const { createMcpServer } = await import('../../src/server/mcp.js');
+      const { createMcpServer } = await import('../../src/adapters/fastmcp/server.js');
       const config = (await import('../../src/config/index.js')).loadConfig({
         mcp: { transport: 'stdio' },
       });
@@ -233,7 +233,7 @@ describe('MCP Server', () => {
     });
 
     it('should expose the underlying FastMCP instance via server', async () => {
-      const { createMcpServer } = await import('../../src/server/mcp.js');
+      const { createMcpServer } = await import('../../src/adapters/fastmcp/server.js');
       const config = (await import('../../src/config/index.js')).loadConfig({
         mcp: { transport: 'stdio' },
       });

@@ -4,6 +4,22 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## March 2026 — Hexagonal Refactor (Phase 4: Adapter Relocation)
+
+### Re-export shims enable incremental migration
+
+When moving files (e.g. `server/rest.ts` → `adapters/fastify/server.ts`), leaving a re-export in the old location prevents breaking external consumers. The old files are deprecated but functional. This let us move all files while keeping 155 tests + 51 BDD steps green throughout.
+
+### Composition root eliminates isMainModule hacks
+
+Each adapter had `isMainModule` blocks with dynamic imports for self-starting. Moving bootstrap to `src/composition/standalone.ts` centralizes wiring and removes side effects from adapter modules.
+
+### formatOutput should be exported from the adapter
+
+The CLI's `formatOutput` was a private function that `format-output.test.ts` had to duplicate. Making it a named export from `adapters/cli/adapter.ts` enables direct testing.
+
+---
+
 ## March 2026 — Hexagonal Refactor Planning
 
 ### Duplicated orchestration is the root cause

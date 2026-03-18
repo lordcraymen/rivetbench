@@ -31,9 +31,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "clean": "node -e \"const fs=require('fs');fs.rmSync('dist',{recursive:true,force:true})\"",
-    "dev:rest": "tsx src/server/rest.ts",
-    "dev:mcp": "tsx src/server/mcp.ts",
-    "dev:cli": "tsx src/cli/index.ts",
+    "dev:rest": "tsx src/composition/standalone.ts",
+    "dev:mcp": "tsx src/adapters/fastmcp/server.ts",
+    "dev:cli": "tsx src/bin/rivetbench.ts",
     "test": "vitest",
     "test:unit": "vitest run",
     "test:bdd": "NODE_OPTIONS=\"--import tsx/esm\" npx cucumber-js test/features --import \"test/steps/*.ts\" --tags \"not @wip\"",

@@ -54,7 +54,7 @@ export {
   toRivetBenchError,
 } from './domain/errors.js';
 
-export { createLogger, createPinoLoggerPort } from './core/logger.js';
+export { createLogger, createPinoLoggerPort } from './adapters/pino/logger.js';
 
 export { type LoggerPort } from './ports/logger.js';
 
@@ -65,19 +65,19 @@ export { listEndpoints, type EndpointSummary } from './application/list-endpoint
 export {
   buildOpenApiDocument,
   type OpenApiGeneratorOptions,
-} from './core/openapi.js';
+} from './adapters/fastify/openapi.js';
 
 // Config
 export { loadConfig, type ServerConfig, type DeepPartial } from './config/index.js';
 
 // Servers
-export { createRestServer, type RestServerOptions } from './server/rest.js';
+export { createRestServer, type RestServerOptions } from './adapters/fastify/server.js';
 export {
   createMcpServer,
   startMcpServer,
   type McpServerOptions,
   type McpServerHandle,
-} from './server/mcp.js';
+} from './adapters/fastmcp/server.js';
 
 // CLI
-export { createCli, type CreateCliOptions } from './cli/index.js';
+export { createCli, type CreateCliOptions } from './adapters/cli/adapter.js';

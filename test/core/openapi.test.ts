@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { buildOpenApiDocument } from '../../src/core/openapi.js';
+import { buildOpenApiDocument } from '../../src/adapters/fastify/openapi.js';
 import { makeEndpoint } from '../../src/domain/endpoint.js';
 
 describe('buildOpenApiDocument', () => {

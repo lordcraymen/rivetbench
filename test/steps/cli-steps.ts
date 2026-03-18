@@ -1,6 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { RivetBenchWorld } from './world.js';
-import { createCli } from '../../src/cli/index.js';
+import { createCli } from '../../src/adapters/cli/adapter.js';
 import { loadConfig } from '../../src/config/index.js';
 import { createDefaultRegistry } from '../../src/endpoints/index.js';
 import { Writable } from 'node:stream';

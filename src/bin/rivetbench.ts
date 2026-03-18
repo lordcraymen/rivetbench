@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { loadConfig } from '../config/index.js';
 import { createDefaultRegistry } from '../endpoints/index.js';
-import { createCli } from '../cli/index.js';
+import { createCli } from '../adapters/cli/adapter.js';
 
 const config = loadConfig();
 const registry = createDefaultRegistry();
