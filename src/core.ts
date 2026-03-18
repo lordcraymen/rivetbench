@@ -3,7 +3,7 @@
  *
  * This entry point re-exports the types and utilities needed to **define**
  * endpoints and work with the registry, without pulling in heavy transport
- * dependencies (Fastify, fastmcp, Pino).
+ * dependencies (Fastify, MCP SDK, Pino).
  *
  * Import from `@lordcraymen/rivetbench/core` when your module only needs to
  * create endpoint definitions or interact with the registry interface.

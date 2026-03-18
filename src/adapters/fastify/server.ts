@@ -8,6 +8,7 @@ import type { ServerConfig } from '../../config/index.js';
 import type { LoggerPort } from '../../ports/logger.js';
 import type { TransportPort } from '../../ports/transport.js';
 import { createErrorHandler, createNotFoundHandler } from './error-handler.js';
+import { createMcpHandler } from '../mcp/handler.js';
 
 /**
  * Options for the Fastify plugin that registers RivetBench routes.
@@ -101,6 +102,28 @@ export async function rivetBenchPlugin(
       requestId: request.id,
     });
     return result.output;
+  });
+
+  // MCP Streamable HTTP endpoint — delegates to SDK transport via raw HTTP.
+  const mcpHandler = createMcpHandler({
+    transport,
+    registry,
+    logger: loggerPort,
+    application,
+  });
+
+  fastify.route({
+    method: ['GET', 'POST', 'DELETE'],
+    url: '/mcp',
+    handler: async (request, reply) => {
+      reply.hijack();
+      await mcpHandler.handleRequest(request.raw, reply.raw, request.body);
+    },
+  });
+
+  // Expose for graceful shutdown
+  fastify.addHook('onClose', async () => {
+    await mcpHandler.close();
   });
 }
 

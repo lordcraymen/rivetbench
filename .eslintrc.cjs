@@ -54,7 +54,7 @@ module.exports = {
     },
     // ADR-0007: MCP adapter — no console.log (breaks stdio protocol)
     {
-      files: ['src/adapters/fastmcp/**/*.ts'],
+      files: ['src/adapters/mcp/**/*.ts'],
       rules: {
         'no-console': ['error', { allow: ['error'] }],
       },

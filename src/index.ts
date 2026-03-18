@@ -80,13 +80,10 @@ export {
   type RivetBenchPluginOptions,
 } from './adapters/fastify/server.js';
 export {
-  createMcpServer,
-  startMcpServer,
-  registerMcpTools,
-  type McpServerOptions,
-  type McpServerHandle,
-  type McpPluginOptions,
-} from './adapters/fastmcp/server.js';
+  createMcpHandler,
+  type McpHandlerOptions,
+  type McpHandler,
+} from './adapters/mcp/handler.js';
 
 // CLI
 export { createCli, type CreateCliOptions } from './adapters/cli/adapter.js';

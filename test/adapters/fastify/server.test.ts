@@ -248,4 +248,87 @@ describe('REST Server Integration', () => {
       registry.setToolEnricher(undefined);
     });
   });
+
+  describe('MCP Endpoint', () => {
+    const mcpHeaders = {
+      'content-type': 'application/json',
+      accept: 'application/json, text/event-stream',
+    };
+
+    it('should accept POST to /mcp (MCP initialization)', async () => {
+      const response = await fastify.inject({
+        method: 'POST',
+        url: '/mcp',
+        headers: mcpHeaders,
+        payload: {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-03-26',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1.0.0' },
+          },
+        },
+      });
+
+      // SDK returns SSE stream; 200 means successful initialization.
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-type']).toContain('text/event-stream');
+      // The SSE body contains the JSON-RPC result as event data
+      expect(response.body).toContain('"protocolVersion"');
+      expect(response.body).toContain('"serverInfo"');
+    });
+
+    it('should reject GET without session ID with 400', async () => {
+      const response = await fastify.inject({ method: 'GET', url: '/mcp' });
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should reject DELETE without session ID with 400', async () => {
+      const response = await fastify.inject({ method: 'DELETE', url: '/mcp' });
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should return session ID header on initialization', async () => {
+      const response = await fastify.inject({
+        method: 'POST',
+        url: '/mcp',
+        headers: mcpHeaders,
+        payload: {
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-03-26',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1.0.0' },
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['mcp-session-id']).toBeDefined();
+    });
+
+    it('should reject POST without Accept: text/event-stream with 406', async () => {
+      const response = await fastify.inject({
+        method: 'POST',
+        url: '/mcp',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        payload: {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-03-26',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1.0.0' },
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(406);
+    });
+  });
 });

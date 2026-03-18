@@ -2,8 +2,8 @@
  * Composition Root — Standalone Server
  *
  * Wires all ports to their concrete adapter implementations and starts
- * the REST and/or MCP servers. This is the **only** place that knows
- * about all concrete types.
+ * a single HTTP server that serves both REST and MCP endpoints.
+ * This is the **only** place that knows about all concrete types.
  *
  * @example
  * ```bash
@@ -14,7 +14,6 @@ import { loadConfig } from '../config/index.js';
 import { createDefaultRegistry } from '../endpoints/index.js';
 import { createLogger, createPinoLoggerPort } from '../adapters/pino/logger.js';
 import { createRestServer } from '../adapters/fastify/server.js';
-import { startMcpServer } from '../adapters/fastmcp/server.js';
 import { createTransportPort } from '../application/create-transport-port.js';
 
 const config = loadConfig();
@@ -23,7 +22,7 @@ const loggerPort = createPinoLoggerPort(logger);
 const registry = createDefaultRegistry();
 const transport = createTransportPort(registry, loggerPort);
 
-// Start REST server
+// Start unified server (REST + MCP on the same Fastify instance)
 const restServer = await createRestServer({
   registry,
   config,
@@ -39,12 +38,5 @@ logger.info(
     port: config.rest.port,
     endpoints: registry.list().map(e => e.name),
   },
-  'REST server started',
+  'Server started (REST + MCP)',
 );
-
-// Start MCP server if configured for non-stdio transport
-// (stdio transport is typically started via a separate entry point)
-if (config.mcp.transport !== 'stdio') {
-  await startMcpServer({ registry, config, transport });
-  loggerPort.info('MCP server started', { transport: config.mcp.transport });
-}
