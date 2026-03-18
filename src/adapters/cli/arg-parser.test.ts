@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCallArgs } from '../../../src/adapters/cli/arg-parser.js';
+import { parseCallArgs } from './arg-parser.js';
 
 describe('parseCallArgs', () => {
   it('should parse JSON input with --params-json', () => {

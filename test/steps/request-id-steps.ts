@@ -5,7 +5,7 @@ import { createRestServer } from '../../src/adapters/fastify/server.js';
 import { loadConfig } from '../../src/config/index.js';
 import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
 import { makeEndpoint } from '../../src/domain/endpoint.js';
-import { createTestLogger, noopLoggerPort } from '../helpers/test-logger.js';
+import { createTestLogger, noopLoggerPort } from '../../src/__test-helpers__/test-logger.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

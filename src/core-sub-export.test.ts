@@ -9,12 +9,12 @@ import { describe, it, expect } from 'vitest';
  */
 describe('core sub-export', () => {
   it('should re-export makeEndpoint', async () => {
-    const core = await import('../../src/core.js');
+    const core = await import('./core.js');
     expect(core.makeEndpoint).toBeInstanceOf(Function);
   });
 
   it('should re-export InMemoryEndpointRegistry', async () => {
-    const core = await import('../../src/core.js');
+    const core = await import('./core.js');
     expect(core.InMemoryEndpointRegistry).toBeInstanceOf(Function);
 
     // Instantiate and exercise basic operations
@@ -23,7 +23,7 @@ describe('core sub-export', () => {
   });
 
   it('should re-export error classes', async () => {
-    const core = await import('../../src/core.js');
+    const core = await import('./core.js');
     expect(core.RivetBenchError).toBeInstanceOf(Function);
     expect(core.ValidationError).toBeInstanceOf(Function);
     expect(core.EndpointNotFoundError).toBeInstanceOf(Function);
@@ -32,7 +32,7 @@ describe('core sub-export', () => {
   });
 
   it('should re-export error helper functions', async () => {
-    const core = await import('../../src/core.js');
+    const core = await import('./core.js');
     expect(core.isRivetBenchError).toBeInstanceOf(Function);
     expect(core.toRivetBenchError).toBeInstanceOf(Function);
 
@@ -41,7 +41,7 @@ describe('core sub-export', () => {
   });
 
   it('should NOT export transport or config symbols', async () => {
-    const core = await import('../../src/core.js') as Record<string, unknown>;
+    const core = await import('./core.js') as Record<string, unknown>;
     expect(core.createRestServer).toBeUndefined();
     expect(core.startMcpServer).toBeUndefined();
     expect(core.loadConfig).toBeUndefined();
@@ -50,7 +50,7 @@ describe('core sub-export', () => {
   });
 
   it('should allow creating a full endpoint via the sub-export', async () => {
-    const { makeEndpoint, InMemoryEndpointRegistry } = await import('../../src/core.js');
+    const { makeEndpoint, InMemoryEndpointRegistry } = await import('./core.js');
     const { z } = await import('zod');
 
     const ping = makeEndpoint({

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatOutput } from '../../../src/adapters/cli/arg-parser.js';
+import { formatOutput } from './arg-parser.js';
 
 describe('CLI formatOutput', () => {
   describe('JSON output mode (rawOutput: false)', () => {

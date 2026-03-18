@@ -2,12 +2,12 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 import express from 'express';
 import type { Server } from 'node:http';
-import { InMemoryEndpointRegistry } from '../../../src/domain/registry.js';
-import { makeEndpoint } from '../../../src/domain/endpoint.js';
-import { createRestHandler } from '../../../src/adapters/rest/handler.js';
-import { createMcpHandler, mcpOpenApiPaths } from '../../../src/adapters/mcp/handler.js';
-import { createTransportPort } from '../../../src/application/create-transport-port.js';
-import { noopLoggerPort } from '../../helpers/test-logger.js';
+import { InMemoryEndpointRegistry } from '../../domain/registry.js';
+import { makeEndpoint } from '../../domain/endpoint.js';
+import { createRestHandler } from '../rest/handler.js';
+import { createMcpHandler, mcpOpenApiPaths } from '../mcp/handler.js';
+import { createTransportPort } from '../../application/create-transport-port.js';
+import { noopLoggerPort } from '../../__test-helpers__/test-logger.js';
 
 /**
  * Integration test: Express app serving SPA + RivetBench REST at /api + MCP at /mcp.

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createLogger, createPinoLoggerPort } from '../../../src/adapters/pino/logger.js';
-import { loadConfig } from '../../../src/config/index.js';
-import type { LoggerPort } from '../../../src/ports/logger.js';
+import { createLogger, createPinoLoggerPort } from './logger.js';
+import { loadConfig } from '../../config/index.js';
+import type { LoggerPort } from '../../ports/logger.js';
 
 describe('LoggerPort', () => {
   describe('createPinoLoggerPort', () => {

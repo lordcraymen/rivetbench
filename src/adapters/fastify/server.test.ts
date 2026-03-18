@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
-import { createRestServer } from '../../../src/adapters/fastify/server.js';
-import { loadConfig } from '../../../src/config/index.js';
-import { InMemoryEndpointRegistry } from '../../../src/domain/registry.js';
-import { makeEndpoint } from '../../../src/domain/endpoint.js';
-import { createTestLogger, noopLoggerPort } from '../../helpers/test-logger.js';
+import { createRestServer } from './server.js';
+import { loadConfig } from '../../config/index.js';
+import { InMemoryEndpointRegistry } from '../../domain/registry.js';
+import { makeEndpoint } from '../../domain/endpoint.js';
+import { createTestLogger, noopLoggerPort } from '../../__test-helpers__/test-logger.js';
 import type { FastifyInstance } from 'fastify';
 
 describe('REST Server Integration', () => {

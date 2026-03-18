@@ -116,7 +116,7 @@ export const loadConfig = (overrides?: DeepPartial<ServerConfig>): ServerConfig 
     },
     application: {
       name: 'RivetBench',
-      version: '0.1.0',
+      version: '0.9.0',
       description: 'Dual exposed RPC endpoints for REST and MCP.'
     },
     logging: {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadConfig } from '../../src/config/index.js';
+import { loadConfig } from './index.js';
 
 describe('loadConfig', () => {
   const originalEnv = { ...process.env };
@@ -39,7 +39,7 @@ describe('loadConfig', () => {
     const cfg = loadConfig({ application: { name: 'my-app' } });
 
     expect(cfg.application.name).toBe('my-app');
-    expect(cfg.application.version).toBe('0.1.0');
+    expect(cfg.application.version).toBe('0.9.0');
     expect(cfg.application.description).toBe('Dual exposed RPC endpoints for REST and MCP.');
   });
 

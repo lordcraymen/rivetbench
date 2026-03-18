@@ -1,5 +1,5 @@
 import pino from 'pino';
-import type { LoggerPort } from '../../src/ports/logger.js';
+import type { LoggerPort } from '../ports/logger.js';
 
 /** Silent Pino logger for tests — no output, no side effects. */
 export const createTestLogger = () => pino({ level: 'silent' });

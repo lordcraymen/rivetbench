@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { z } from 'zod';
-import { InMemoryEndpointRegistry } from '../../../src/domain/registry.js';
-import { makeEndpoint } from '../../../src/domain/endpoint.js';
-import { createRestHandler, type RestHandler } from '../../../src/adapters/rest/handler.js';
-import { createTransportPort } from '../../../src/application/create-transport-port.js';
-import { noopLoggerPort } from '../../helpers/test-logger.js';
+import { InMemoryEndpointRegistry } from '../../domain/registry.js';
+import { makeEndpoint } from '../../domain/endpoint.js';
+import { createRestHandler, type RestHandler } from './handler.js';
+import { createTransportPort } from '../../application/create-transport-port.js';
+import { noopLoggerPort } from '../../__test-helpers__/test-logger.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { z } from 'zod';
-import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
-import { makeEndpoint } from '../../src/domain/endpoint.js';
+import { InMemoryEndpointRegistry } from './registry.js';
+import { makeEndpoint } from './endpoint.js';
 
 describe('InMemoryEndpointRegistry', () => {
   let registry: InMemoryEndpointRegistry;

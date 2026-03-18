@@ -4,6 +4,22 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## v0.9.0 — Sub-path Exports, Test Co-location & CLI Cold Start
+
+### Sub-path exports enable tree-shaking without a monorepo
+
+Adding `"./fastify"`, `"./rest"`, `"./mcp"`, `"./cli"`, `"./openapi"`, `"./pino"` to `package.json` exports lets consumers import only what they need. Combined with `"sideEffects": false`, bundlers can tree-shake unused adapters. This avoids premature monorepo complexity — split into packages at v1.0 if needed.
+
+### Co-locating tests with source simplifies future package splits
+
+Moving unit tests next to their source files (`src/domain/endpoint.test.ts` alongside `src/domain/endpoint.ts`) means each directory is self-contained and can be extracted into a separate package without hunting for tests in a mirror tree. BDD features stay in `test/features/` since they span multiple modules.
+
+### CLI cold start is tsx overhead, not module loading
+
+Measured ~850ms via `npx tsx` vs ~89ms via compiled `node dist/`. The lazy dynamic import pattern in the CLI adapter was already correct — no heavy deps (Fastify/Pino/MCP SDK) loaded at startup. The 10x overhead is tsx's JIT TypeScript transpilation. For production CLI usage, recommend running the compiled JS directly.
+
+---
+
 ## March 2026 — Phase 9: Unified OpenAPI Topology + Express Integration
 
 ### OpenAPI describes HTTP surface topology, not protocol internals

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { listEndpoints } from '../../src/application/list-endpoints.js';
-import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
-import { makeEndpoint } from '../../src/domain/endpoint.js';
+import { listEndpoints } from './list-endpoints.js';
+import { InMemoryEndpointRegistry } from '../domain/registry.js';
+import { makeEndpoint } from '../domain/endpoint.js';
 
 const echoEndpoint = makeEndpoint({
   name: 'echo',

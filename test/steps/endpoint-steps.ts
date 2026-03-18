@@ -3,7 +3,7 @@ import { RivetBenchWorld } from './world.js';
 import { createRestServer } from '../../src/adapters/fastify/server.js';
 import { loadConfig } from '../../src/config/index.js';
 import { createDefaultRegistry } from '../../src/endpoints/index.js';
-import { createTestLogger, noopLoggerPort } from '../helpers/test-logger.js';
+import { createTestLogger, noopLoggerPort } from '../../src/__test-helpers__/test-logger.js';
 
 /**
  * Step: Given the "endpoint" endpoint is registered with input { ... }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { myFuncEndpoint } from '../../src/endpoints/myfunc.js';
-import { uppercaseEndpoint } from '../../src/endpoints/uppercase.js';
+import { myFuncEndpoint } from './myfunc.js';
+import { uppercaseEndpoint } from './uppercase.js';
 
 describe('MyFunc Endpoint', () => {
   it('processes text and number inputs correctly', async () => {

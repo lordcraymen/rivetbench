@@ -7,7 +7,7 @@ import {
   ConfigurationError,
   isRivetBenchError,
   toRivetBenchError
-} from '../../src/domain/errors.js';
+} from './errors.js';
 
 describe('Error Classes', () => {
   describe('RivetBenchError', () => {

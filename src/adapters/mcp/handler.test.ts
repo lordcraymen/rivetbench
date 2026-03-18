@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
-import { InMemoryEndpointRegistry } from '../../../src/domain/registry.js';
-import { makeEndpoint } from '../../../src/domain/endpoint.js';
-import { createMcpHandler, type McpHandler } from '../../../src/adapters/mcp/handler.js';
-import { createTransportPort } from '../../../src/application/create-transport-port.js';
-import { noopLoggerPort } from '../../helpers/test-logger.js';
+import { InMemoryEndpointRegistry } from '../../domain/registry.js';
+import { makeEndpoint } from '../../domain/endpoint.js';
+import { createMcpHandler, type McpHandler } from './handler.js';
+import { createTransportPort } from '../../application/create-transport-port.js';
+import { noopLoggerPort } from '../../__test-helpers__/test-logger.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 function fakeReq(overrides: Partial<IncomingMessage> & { method?: string; headers?: Record<string, string> }): IncomingMessage {

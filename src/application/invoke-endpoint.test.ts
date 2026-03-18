@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import { invokeEndpoint } from '../../src/application/invoke-endpoint.js';
-import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
-import { makeEndpoint } from '../../src/domain/endpoint.js';
-import { EndpointNotFoundError, ValidationError } from '../../src/domain/errors.js';
-import type { LoggerPort } from '../../src/ports/logger.js';
+import { invokeEndpoint } from './invoke-endpoint.js';
+import { InMemoryEndpointRegistry } from '../domain/registry.js';
+import { makeEndpoint } from '../domain/endpoint.js';
+import { EndpointNotFoundError, ValidationError } from '../domain/errors.js';
+import type { LoggerPort } from '../ports/logger.js';
 
 const noopLogger: LoggerPort = {
   info: vi.fn(),

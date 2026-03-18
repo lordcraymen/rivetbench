@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createTransportPort } from '../../src/application/create-transport-port.js';
-import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
-import { makeEndpoint } from '../../src/domain/endpoint.js';
+import { createTransportPort } from './create-transport-port.js';
+import { InMemoryEndpointRegistry } from '../domain/registry.js';
+import { makeEndpoint } from '../domain/endpoint.js';
 import { z } from 'zod';
-import { noopLoggerPort } from '../helpers/test-logger.js';
+import { noopLoggerPort } from '../__test-helpers__/test-logger.js';
 
 describe('createTransportPort', () => {
   const registry = new InMemoryEndpointRegistry();
