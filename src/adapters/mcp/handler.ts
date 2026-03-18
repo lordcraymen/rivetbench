@@ -19,10 +19,121 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { OpenAPIV3 } from 'openapi-types';
 import type { TransportPort } from '../../ports/transport.js';
 import type { EndpointRegistry } from '../../domain/registry.js';
 import type { LoggerPort } from '../../ports/logger.js';
 import { toRivetBenchError } from '../../domain/errors.js';
+
+/**
+ * OpenAPI path item describing the MCP Streamable HTTP endpoint.
+ *
+ * Include this in your OpenAPI document via `extraPaths` to describe the
+ * `/mcp` endpoint in the server's HTTP topology.  The individual MCP tools
+ * are discoverable through the MCP protocol itself (`tools/list`).
+ *
+ * @param path - The URL path where MCP is mounted (default: `/mcp`).
+ *
+ * @example
+ * ```typescript
+ * const handler = createRestHandler({
+ *   ...,
+ *   extraPaths: mcpOpenApiPaths('/mcp'),
+ * });
+ * ```
+ */
+export function mcpOpenApiPaths(
+  path = '/mcp',
+): Record<string, OpenAPIV3.PathItemObject> {
+  return {
+    [path]: {
+      post: {
+        summary: 'MCP Streamable HTTP endpoint',
+        description:
+          'Model Context Protocol (MCP) endpoint using Streamable HTTP transport. ' +
+          'Supports JSON-RPC 2.0 over SSE. Send an `initialize` request to start a session. ' +
+          'The same tools available via REST `/rpc/*` are exposed here as MCP tools, ' +
+          'discoverable through the MCP `tools/list` method.',
+        operationId: 'mcp_post',
+        parameters: [
+          {
+            name: 'mcp-session-id',
+            in: 'header',
+            description: 'Session identifier returned on initialization. Omit for new sessions.',
+            required: false,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                description: 'JSON-RPC 2.0 request',
+                properties: {
+                  jsonrpc: { type: 'string', enum: ['2.0'] },
+                  id: { oneOf: [{ type: 'string' }, { type: 'number' }] },
+                  method: { type: 'string' },
+                  params: { type: 'object' },
+                },
+                required: ['jsonrpc', 'method'],
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'SSE stream with JSON-RPC response(s)',
+            content: { 'text/event-stream': { schema: { type: 'string' } } },
+          },
+          '400': { description: 'Bad request (missing session for GET/DELETE)' },
+          '404': { description: 'Session not found' },
+          '406': { description: 'Missing required Accept: text/event-stream header' },
+        },
+      },
+      get: {
+        summary: 'MCP SSE stream (existing session)',
+        description: 'Retrieve the SSE notification stream for an existing MCP session.',
+        operationId: 'mcp_get',
+        parameters: [
+          {
+            name: 'mcp-session-id',
+            in: 'header',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'SSE notification stream',
+            content: { 'text/event-stream': { schema: { type: 'string' } } },
+          },
+          '400': { description: 'Missing session ID' },
+          '404': { description: 'Session not found' },
+        },
+      },
+      delete: {
+        summary: 'Close MCP session',
+        description: 'Terminate an active MCP session.',
+        operationId: 'mcp_delete',
+        parameters: [
+          {
+            name: 'mcp-session-id',
+            in: 'header',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          '200': { description: 'Session closed' },
+          '400': { description: 'Missing session ID' },
+          '404': { description: 'Session not found' },
+        },
+      },
+    },
+  };
+}
 
 /**
  * Options for {@link createMcpHandler}.

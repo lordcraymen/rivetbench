@@ -6,6 +6,10 @@ export interface OpenApiGeneratorOptions {
   title: string;
   version: string;
   description?: string;
+  /** Base path prefix for all generated paths (e.g. `/api`). */
+  basePath?: string;
+  /** Additional path items to include in the document (e.g. `/mcp`). */
+  extraPaths?: Record<string, OpenAPIV3.PathItemObject>;
 }
 
 const zodSchemaToOpenApi = (zodSchema: AnyEndpointDefinition['input'] | AnyEndpointDefinition['output']): OpenAPIV3.SchemaObject => {
@@ -81,10 +85,17 @@ export const buildOpenApiDocument = (
   options: OpenApiGeneratorOptions
 ): OpenAPIV3.Document => {
   const paths: OpenAPIV3.PathsObject = {};
+  const prefix = options.basePath ?? '';
 
   for (const endpoint of endpoints) {
-    const path = `/rpc/${endpoint.name}`;
+    const path = `${prefix}/rpc/${endpoint.name}`;
     paths[path] = buildRpcPathItem(endpoint);
+  }
+
+  if (options.extraPaths) {
+    for (const [path, item] of Object.entries(options.extraPaths)) {
+      paths[path] = item;
+    }
   }
 
   return {

@@ -86,6 +86,7 @@ export {
 } from './adapters/rest/handler.js';
 export {
   createMcpHandler,
+  mcpOpenApiPaths,
   type McpHandlerOptions,
   type McpHandler,
 } from './adapters/mcp/handler.js';

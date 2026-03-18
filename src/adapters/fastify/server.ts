@@ -8,7 +8,7 @@ import type { LoggerPort } from '../../ports/logger.js';
 import type { TransportPort } from '../../ports/transport.js';
 import { createErrorHandler, createNotFoundHandler } from './error-handler.js';
 import { createRestHandler } from '../rest/handler.js';
-import { createMcpHandler } from '../mcp/handler.js';
+import { createMcpHandler, mcpOpenApiPaths } from '../mcp/handler.js';
 
 /**
  * Options for the Fastify plugin that registers RivetBench routes.
@@ -60,6 +60,7 @@ export async function rivetBenchPlugin(
     registry,
     logger: loggerPort,
     application,
+    extraPaths: mcpOpenApiPaths('/mcp'),
   });
 
   // Swagger UI — Fastify-specific convenience fed by the shared OpenAPI doc

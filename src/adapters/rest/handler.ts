@@ -25,7 +25,7 @@ import type { TransportPort } from '../../ports/transport.js';
 import type { EndpointRegistry } from '../../domain/registry.js';
 import type { LoggerPort } from '../../ports/logger.js';
 import { toRivetBenchError } from '../../domain/errors.js';
-import { buildOpenApiDocument } from '../../application/openapi.js';
+import { buildOpenApiDocument, type OpenApiGeneratorOptions } from '../../application/openapi.js';
 
 /**
  * Options for {@link createRestHandler}.
@@ -39,6 +39,18 @@ export interface RestHandlerOptions {
   logger: LoggerPort;
   /** Application metadata for OpenAPI docs. */
   application: { name: string; version: string; description?: string };
+  /**
+   * Base path prefix used in the OpenAPI document paths.
+   * When the handler is mounted at a sub-path (e.g. Express `app.use('/api', ...)`),
+   * set this so the generated OpenAPI paths reflect the public URL.
+   */
+  basePath?: string;
+  /**
+   * Additional OpenAPI path entries to include in the document.
+   * Use this to describe non-RPC endpoints that are part of the server topology
+   * (e.g. `/mcp`, static file routes).
+   */
+  extraPaths?: Record<string, OpenAPIV3.PathItemObject>;
 }
 
 /**
@@ -123,11 +135,15 @@ function getRequestId(req: IncomingMessage): string {
 export function createRestHandler(options: RestHandlerOptions): RestHandler {
   const { transport, registry, logger, application } = options;
 
-  const document = buildOpenApiDocument(registry.list(), {
+  const openApiOptions: OpenApiGeneratorOptions = {
     title: application.name,
     version: application.version,
     description: application.description,
-  });
+    basePath: options.basePath,
+    extraPaths: options.extraPaths,
+  };
+
+  const document = buildOpenApiDocument(registry.list(), openApiOptions);
 
   async function handleRequest(
     req: IncomingMessage,
