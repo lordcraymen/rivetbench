@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { makeEndpoint } from '../core/endpoint.js';
+import { makeEndpoint } from '../domain/endpoint.js';
 
 const UppercaseInput = z.object({
   text: z.string()

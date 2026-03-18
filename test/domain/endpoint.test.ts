@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import { makeEndpoint } from '../../src/core/endpoint.js';
+import { makeEndpoint } from '../../src/domain/endpoint.js';
 
 describe('makeEndpoint', () => {
   it('should create an endpoint definition with correct properties', () => {

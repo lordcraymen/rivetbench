@@ -34,7 +34,7 @@ export {
   type EndpointHandler,
   type EndpointRuntimeConfig,
   type ContextFactory,
-} from './core/endpoint.js';
+} from './domain/endpoint.js';
 
 export {
   type EndpointRegistry,
@@ -42,7 +42,7 @@ export {
   type ToolEnricher,
   type ToolEnricherContext,
   type ToolsChangedListener,
-} from './core/registry.js';
+} from './domain/registry.js';
 
 export {
   RivetBenchError,
@@ -52,9 +52,15 @@ export {
   ConfigurationError,
   isRivetBenchError,
   toRivetBenchError,
-} from './core/errors.js';
+} from './domain/errors.js';
 
-export { createLogger } from './core/logger.js';
+export { createLogger, createPinoLoggerPort } from './core/logger.js';
+
+export { type LoggerPort } from './ports/logger.js';
+
+// Application service
+export { invokeEndpoint, type InvocationResult } from './application/invoke-endpoint.js';
+export { listEndpoints, type EndpointSummary } from './application/list-endpoints.js';
 
 export {
   buildOpenApiDocument,

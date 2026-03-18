@@ -1,5 +1,6 @@
 import pino, { Logger as PinoLogger } from 'pino';
 import type { ServerConfig } from '../config/index.js';
+import type { LoggerPort } from '../ports/logger.js';
 
 /**
  * Logger configuration for RivetBench
@@ -58,4 +59,49 @@ export function createLogger(config: ServerConfig): PinoLogger {
  */
 export function createChildLogger(logger: PinoLogger, context: Record<string, unknown>): PinoLogger {
   return logger.child(context);
+}
+
+/**
+ * Wrap a Pino logger instance as a {@link LoggerPort}.
+ *
+ * This adapter bridges the Pino-specific API (`logger.info(obj, msg)`)
+ * to the port interface (`logger.info(msg, context?)`).
+ *
+ * @param pinoLogger - A Pino logger to wrap.
+ * @returns A {@link LoggerPort} backed by the given Pino instance.
+ *
+ * @example
+ * ```typescript
+ * const pino = createLogger(config);
+ * const logger: LoggerPort = createPinoLoggerPort(pino);
+ * logger.info('hello', { key: 'value' });
+ * ```
+ */
+export function createPinoLoggerPort(pinoLogger: PinoLogger): LoggerPort {
+  return {
+    info(msg: string, context?: Record<string, unknown>): void {
+      if (context) {
+        pinoLogger.info(context, msg);
+      } else {
+        pinoLogger.info(msg);
+      }
+    },
+    warn(msg: string, context?: Record<string, unknown>): void {
+      if (context) {
+        pinoLogger.warn(context, msg);
+      } else {
+        pinoLogger.warn(msg);
+      }
+    },
+    error(msg: string, context?: Record<string, unknown>): void {
+      if (context) {
+        pinoLogger.error(context, msg);
+      } else {
+        pinoLogger.error(msg);
+      }
+    },
+    child(bindings: Record<string, unknown>): LoggerPort {
+      return createPinoLoggerPort(pinoLogger.child(bindings));
+    },
+  };
 }

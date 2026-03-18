@@ -1,7 +1,9 @@
 import { FastMCP } from 'fastmcp';
-import { EndpointRegistry } from '../core/registry.js';
+import { EndpointRegistry } from '../domain/registry.js';
 import type { ServerConfig } from '../config/index.js';
-import { ValidationError, toRivetBenchError } from '../core/errors.js';
+import { toRivetBenchError } from '../domain/errors.js';
+import { invokeEndpoint } from '../application/invoke-endpoint.js';
+import type { LoggerPort } from '../ports/logger.js';
 
 export interface McpServerOptions {
   registry: EndpointRegistry;
@@ -64,43 +66,33 @@ export const createMcpServer = ({ registry, config }: McpServerOptions): McpServ
       description: endpoint.description || endpoint.summary,
       parameters: endpoint.input as never, // Zod schemas are compatible with StandardSchemaV1
       execute: async (args, context) => {
-        const requestId = crypto.randomUUID();
+        // Wrap FastMCP's context.log as a LoggerPort (writes to stderr)
+        const mcpLogger: LoggerPort = {
+          info: (msg, ctx) => context.log.info(msg, ctx as Record<string, string>),
+          warn: (msg, ctx) => context.log.warn(msg, ctx as Record<string, string>),
+          error: (msg, ctx) => context.log.error(msg, ctx as Record<string, string>),
+          child: () => mcpLogger,
+        };
 
         try {
-          const parsedInput = endpoint.input.safeParse(args);
-
-          if (!parsedInput.success) {
-            throw new ValidationError('Invalid tool input', {
-              tool: endpoint.name,
-              issues: parsedInput.error.format()
-            });
-          }
-
-          const result = await endpoint.handler({
-            input: parsedInput.data,
-            config: { requestId },
-            ctx: registry.createContext(),
-          });
-
-          const validatedOutput = endpoint.output.parse(result);
+          const result = await invokeEndpoint(registry, endpoint.name, args, mcpLogger);
 
           return {
             content: [
               {
                 type: 'text' as const,
-                text: JSON.stringify(validatedOutput, null, 2)
+                text: JSON.stringify(result.output, null, 2)
               }
             ]
           };
         } catch (error) {
           const rivetError = toRivetBenchError(error);
 
-          context.log.error('Tool execution failed', {
+          mcpLogger.error('Tool execution failed', {
             tool: endpoint.name,
-            requestId,
             errorCode: rivetError.code,
-            errorMessage: rivetError.message
-          } as Record<string, string>);
+            errorMessage: rivetError.message,
+          });
 
           return {
             content: [

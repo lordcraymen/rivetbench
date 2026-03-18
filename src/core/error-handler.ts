@@ -1,7 +1,7 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import type { Logger as PinoLogger } from 'pino';
-import { isRivetBenchError, ValidationError, toRivetBenchError } from './errors.js';
+import { isRivetBenchError, ValidationError, toRivetBenchError } from '../domain/errors.js';
 
 /**
  * Create a Fastify error handler with logger dependency injection

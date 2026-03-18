@@ -1,4 +1,4 @@
-import { InMemoryEndpointRegistry } from '../core/registry.js';
+import { InMemoryEndpointRegistry } from '../domain/registry.js';
 import { echoEndpoint } from './echo.js';
 import { myFuncEndpoint } from './myfunc.js';
 import { uppercaseEndpoint } from './uppercase.js';

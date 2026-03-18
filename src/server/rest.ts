@@ -2,11 +2,12 @@ import Fastify from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import { buildOpenApiDocument } from '../core/openapi.js';
-import { EndpointRegistry } from '../core/registry.js';
+import { EndpointRegistry } from '../domain/registry.js';
 import type { ServerConfig } from '../config/index.js';
-import { createLogger } from '../core/logger.js';
+import { createLogger, createPinoLoggerPort } from '../core/logger.js';
 import { createErrorHandler, createNotFoundHandler } from '../core/error-handler.js';
-import { EndpointNotFoundError, ValidationError } from '../core/errors.js';
+import { invokeEndpoint } from '../application/invoke-endpoint.js';
+import { listEndpoints } from '../application/list-endpoints.js';
 
 export interface RestServerOptions {
   registry: EndpointRegistry;
@@ -67,16 +68,10 @@ export const createRestServer = async ({ registry, config }: RestServerOptions) 
       return reply.status(304).send();
     }
 
-    const enriched = registry.listEnriched({
+    const tools = listEndpoints(registry, {
       sessionId: request.id,
       transportType: 'rest',
     });
-
-    const tools = enriched.map(e => ({
-      name: e.name,
-      summary: e.summary,
-      description: e.description,
-    }));
 
     return reply
       .header('ETag', currentEtag)
@@ -84,29 +79,18 @@ export const createRestServer = async ({ registry, config }: RestServerOptions) 
       .send(tools);
   });
 
+  const loggerPort = createPinoLoggerPort(logger);
+
   fastify.post('/rpc/:name', async (request) => {
     const endpointName = (request.params as { name: string }).name;
-    const endpoint = registry.get(endpointName);
-    
-    if (!endpoint) {
-      throw new EndpointNotFoundError(endpointName);
-    }
-
-    const parsedInput = endpoint.input.safeParse(request.body);
-    if (!parsedInput.success) {
-      throw new ValidationError('Invalid endpoint input', {
-        endpoint: endpointName,
-        issues: parsedInput.error.format()
-      });
-    }
-
-    const result = await endpoint.handler({
-      input: parsedInput.data,
-      config: { requestId: request.id },
-      ctx: registry.createContext(),
-    });
-
-    return endpoint.output.parse(result);
+    const result = await invokeEndpoint(
+      registry,
+      endpointName,
+      request.body,
+      loggerPort,
+      { requestId: request.id },
+    );
+    return result.output;
   });
 
   return {

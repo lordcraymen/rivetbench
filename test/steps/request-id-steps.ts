@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { RivetBenchWorld } from './world.js';
 import { createRestServer } from '../../src/server/rest.js';
 import { loadConfig } from '../../src/config/index.js';
-import { InMemoryEndpointRegistry } from '../../src/core/registry.js';
-import { makeEndpoint } from '../../src/core/endpoint.js';
+import { InMemoryEndpointRegistry } from '../../src/domain/registry.js';
+import { makeEndpoint } from '../../src/domain/endpoint.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

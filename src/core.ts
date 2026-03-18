@@ -29,7 +29,7 @@ export {
   type EndpointHandler,
   type EndpointRuntimeConfig,
   type ContextFactory,
-} from './core/endpoint.js';
+} from './domain/endpoint.js';
 
 // Registry
 export {
@@ -38,7 +38,7 @@ export {
   type ToolEnricher,
   type ToolEnricherContext,
   type ToolsChangedListener,
-} from './core/registry.js';
+} from './domain/registry.js';
 
 // Error classes
 export {
@@ -49,4 +49,7 @@ export {
   ConfigurationError,
   isRivetBenchError,
   toRivetBenchError,
-} from './core/errors.js';
+} from './domain/errors.js';
+
+// Ports
+export { type LoggerPort } from './ports/logger.js';

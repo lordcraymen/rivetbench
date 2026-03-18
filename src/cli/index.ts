@@ -1,7 +1,8 @@
-import { EndpointRegistry } from '../core/registry.js';
+import { EndpointRegistry } from '../domain/registry.js';
 import type { ServerConfig } from '../config/index.js';
-import { EndpointNotFoundError, ValidationError, toRivetBenchError } from '../core/errors.js';
-import { randomUUID } from 'node:crypto';
+import { toRivetBenchError, ValidationError } from '../domain/errors.js';
+import { invokeEndpoint } from '../application/invoke-endpoint.js';
+import type { LoggerPort } from '../ports/logger.js';
 
 export interface CliIoStreams {
   stdout: NodeJS.WritableStream;
@@ -222,32 +223,12 @@ const formatOutput = (output: unknown, rawOutput: boolean): string => {
 const handleCall = async (
   registry: EndpointRegistry,
   stdout: NodeJS.WritableStream,
-  args: string[]
+  args: string[],
+  logger: LoggerPort,
 ) => {
   const { endpointName, input, rawOutput } = parseCallArgs(args);
-  const endpoint = registry.get(endpointName);
-
-  if (!endpoint) {
-    throw new EndpointNotFoundError(endpointName);
-  }
-
-  const parsedInput = endpoint.input.safeParse(input);
-
-  if (!parsedInput.success) {
-    throw new ValidationError('Invalid endpoint input', {
-      endpoint: endpointName,
-      issues: parsedInput.error.format()
-    });
-  }
-
-  const result = await endpoint.handler({
-    input: parsedInput.data,
-    config: { requestId: randomUUID() },
-    ctx: registry.createContext(),
-  });
-
-  const parsedOutput = endpoint.output.parse(result);
-  writeLine(stdout, formatOutput(parsedOutput, rawOutput));
+  const result = await invokeEndpoint(registry, endpointName, input, logger);
+  writeLine(stdout, formatOutput(result.output, rawOutput));
 };
 
 /**
@@ -271,6 +252,14 @@ export const createCli = ({ registry, config, streams }: CreateCliOptions) => {
   const stdout = streams?.stdout ?? process.stdout;
   const stderr = streams?.stderr ?? process.stderr;
 
+  // CLI logger writes to stderr (safe for MCP stdio, and avoids polluting CLI output)
+  const cliLogger: LoggerPort = {
+    info: () => {},
+    warn: (msg) => { writeLine(stderr, `[warn] ${msg}`); },
+    error: (msg) => { writeLine(stderr, `[error] ${msg}`); },
+    child: () => cliLogger,
+  };
+
   const run = async (argv: string[]): Promise<number> => {
     if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
       writeLine(stdout, usageText(config.application.name));
@@ -286,7 +275,7 @@ export const createCli = ({ registry, config, streams }: CreateCliOptions) => {
       }
 
       if (command === 'call') {
-        await handleCall(registry, stdout, rest);
+        await handleCall(registry, stdout, rest, cliLogger);
         return 0;
       }
 
