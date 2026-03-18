@@ -1,492 +1,298 @@
-# Architecture Guide
+# RivetBench Architecture — Hexagonal (Ports & Adapters)
 
-This document covers RivetBench's architectural patterns, principles, and implementation guidelines.
+This document describes the **target architecture** for RivetBench following hexagonal principles. It supersedes the previous layered architecture from v0.3.0 (see git tag `v0.3.0` / commit `2cb15ca`).
 
----
+## Overview
 
-## Table of Contents
+RivetBench adopts a **hexagonal architecture** (also known as *Ports & Adapters*) to decouple business logic from infrastructure. The key principle: **the domain never depends on the outside world — the outside world depends on the domain**.
 
-1. [SOLID Principles](#solid-principles)
-2. [Dependency Injection Pattern](#dependency-injection-pattern)
-3. [Error Handling](#error-handling)
-4. [Logging](#logging)
-5. [Transport Parity](#transport-parity)
+```
+                    ┌─────────────────────────────────────────────┐
+                    │              Composition Root                │
+                    │  (wires ports to adapters at startup)        │
+                    └──────┬──────────────┬──────────────┬────────┘
+                           │              │              │
+              ┌────────────▼──┐   ┌───────▼───────┐  ┌──▼─────────────┐
+              │  Fastify       │   │  FastMCP       │  │  CLI            │
+              │  Adapter       │   │  Adapter       │  │  Adapter        │
+              │  (driven)      │   │  (driven)      │  │  (driven)       │
+              └────────┬───────┘   └───────┬───────┘  └──┬──────────────┘
+                       │                   │              │
+              ─────────▼───────────────────▼──────────────▼──────────────
+              │              PORT: TransportPort                         │
+              │  invoke(name, rawInput) → Result                        │
+              ──────────────────────────┬────────────────────────────────
+                                        │
+                          ┌─────────────▼──────────────┐
+                          │    Application Service      │
+                          │    invokeEndpoint()         │
+                          │    listEndpoints()          │
+                          └─────────────┬──────────────┘
+                                        │
+                          ┌─────────────▼──────────────┐
+                          │         Domain              │
+                          │  EndpointDefinition         │
+                          │  EndpointRegistry           │
+                          │  Zod schemas                │
+                          │  Error classes              │
+                          └─────────────┬──────────────┘
+                                        │
+              ──────────────────────────┬────────────────────────────────
+              │           PORT: LoggerPort                               │
+              │  info() / warn() / error()                               │
+              ──────────────────────────┬────────────────────────────────
+                                        │
+                          ┌─────────────▼──────────────┐
+                          │    Pino Adapter              │
+                          │    (implements LoggerPort)   │
+                          └────────────────────────────┘
+```
 
----
+## Layers
 
-## SOLID Principles
+### 1. Domain (`src/domain/`)
 
-### Quick Reference
+Pure business logic with **zero infrastructure dependencies**. This layer defines *what* an endpoint is and how endpoints are organised, but knows nothing about HTTP, MCP, or CLI.
 
-**S**ingle Responsibility • **O**pen/Closed • **L**iskov Substitution • **I**nterface Segregation • **D**ependency Inversion
+| Module | Responsibility |
+|--------|---------------|
+| `endpoint.ts` | `EndpointDefinition`, `makeEndpoint()`, Zod schema types |
+| `registry.ts` | `EndpointRegistry` interface, `InMemoryEndpointRegistry` |
+| `errors.ts` | `RivetBenchError` hierarchy (domain errors only) |
 
-### 1. Single Responsibility Principle (SRP)
+**Rules**:
+- No `import` from `adapters/`, `application/`, or `ports/` is allowed
+- No Node.js built-ins except `crypto` (for UUIDs)
+- All types are defined here; other layers depend on these types
 
-> A module should have one, and only one, reason to change.
+### 2. Application (`src/application/`)
 
-**✅ Good Example** (from `src/config/index.ts`):
+Use cases that orchestrate domain objects. This is the **single place** where the validate → invoke → validate pipeline lives. All transports call into this layer instead of reimplementing the flow.
+
+| Module | Responsibility |
+|--------|---------------|
+| `invoke-endpoint.ts` | Resolve endpoint, validate input, call handler, validate output |
+| `list-endpoints.ts` | List and enrich endpoints for a given transport context |
+
+**The critical abstraction** — today this pipeline is duplicated across REST, MCP, and CLI:
+
 ```typescript
-// Single responsibility: Load and validate config
-export function loadConfig(): ServerConfig {
+// Before: duplicated in rest.ts, mcp.ts, cli/index.ts
+const parsedInput = endpoint.input.safeParse(rawInput);
+const result = await endpoint.handler({ input: parsedInput.data, config: { requestId }, ctx });
+const output = endpoint.output.parse(result);
+
+// After: single application service
+export async function invokeEndpoint(
+  registry: EndpointRegistry,
+  name: string,
+  rawInput: unknown,
+  logger: LoggerPort,
+): Promise<InvocationResult> {
+  const endpoint = registry.get(name);
+  if (!endpoint) throw new EndpointNotFoundError(name);
+
+  const requestId = crypto.randomUUID();
+  const parsed = endpoint.input.safeParse(rawInput);
+  if (!parsed.success) {
+    throw new ValidationError('Invalid endpoint input', {
+      endpoint: name,
+      issues: parsed.error.format(),
+    });
+  }
+
+  const result = await endpoint.handler({
+    input: parsed.data,
+    config: { requestId },
+    ctx: registry.createContext(),
+  });
+
   return {
-    rest: { host, port },
-    mcp: { transport, port }
+    requestId,
+    output: endpoint.output.parse(result),
   };
 }
-// Does NOT: Create loggers, start servers, handle endpoints
 ```
 
-**❌ Anti-Pattern**:
-```typescript
-// Multiple responsibilities - DON'T DO THIS
-export function createLogger() {
-  const config = loadConfig();        // Config loading
-  const logger = pino(config);         // Logger creation
-  registerGlobalLogger(logger);        // Global state
-  startHealthCheck(logger);            // Health check logic
-  return logger;
-}
-```
+### 3. Ports (`src/ports/`)
 
-**Guidelines**:
-- Each module does **one thing well**
-- If describing a function uses "and", split it
-- Functions < 30 lines typically
-- One reason to modify
+Interfaces that define the **contract** between the application core and the outside world. Ports are split into two categories:
 
-### 2. Open/Closed Principle (OCP)
+**Driving ports** (primary — the outside world calls *in*):
+- `TransportPort` — how a transport adapter invokes an endpoint
 
-> Open for extension, closed for modification.
-
-**✅ Good Example** (from `src/core/errors.ts`):
-```typescript
-// Extend with new error type (no modification to existing code)
-export class RateLimitError extends RivetBenchError {
-  constructor(details?: Record<string, unknown>) {
-    super('Rate limit exceeded', 429, 'RATE_LIMIT_EXCEEDED', details);
-  }
-}
-```
-
-**Guidelines**:
-- Use **composition** over modification
-- New features should **extend**, not **change**
-- Leverage interfaces for extensibility
-
-### 3. Liskov Substitution Principle (LSP)
-
-> Subclasses must work wherever parent works.
-
-**✅ Good Example**:
-```typescript
-function logError(error: RivetBenchError) {
-  logger.error(error.toJSON()); // Works for ALL error types
-}
-
-logError(new ValidationError('Invalid'));
-logError(new NotFoundError('Missing'));  // Substitutable
-```
-
-### 4. Interface Segregation Principle (ISP)
-
-> Many small interfaces > one large interface.
-
-**✅ Good Example**:
-```typescript
-// Focused interfaces
-interface RestServer {
-  start(): Promise<void>;
-}
-
-interface McpServer {
-  start(): Promise<void>;
-}
-```
-
-**❌ Anti-Pattern**:
-```typescript
-// Forces unused methods - DON'T DO THIS
-interface Server {
-  startRest(): void;
-  startMcp(): void;
-  startGrpc(): void;  // Not all servers need this
-}
-```
-
-### 5. Dependency Inversion Principle (DIP)
-
-> Depend on abstractions; inject dependencies.
-
-**✅ Good Example** (from `src/server/rest.ts`):
-```typescript
-export interface RestServerOptions {
-  registry: EndpointRegistry;
-  config: ServerConfig;  // Explicit dependency
-}
-
-export const createRestServer = async ({ registry, config }: RestServerOptions) => {
-  const logger = createLogger(config);  // Injected config
-  // ...
-}
-```
-
-**❌ Anti-Pattern**:
-```typescript
-// Hidden dependency - DON'T DO THIS
-export const createRestServer = async ({ registry }) => {
-  const config = loadConfig();  // Created internally
-  const logger = createLogger();
-}
-```
-
-**Critical Rule**: Load config **once** at app entry, then inject everywhere.
-
----
-
-## Dependency Injection Pattern
-
-### The Problem (Before DI)
-
-Multiple independent `loadConfig()` calls caused:
-- Configuration drift in tests
-- Race conditions
-- Hidden dependencies
-- Difficult testing
-
-**Example of the problem**:
-```typescript
-// ❌ BAD: Called 4+ times during startup
-export function createLogger(): PinoLogger {
-  const config = loadConfig();  // Call 1
-  // ...
-}
-
-export const createRestServer = async ({ registry }) => {
-  const config = loadConfig();  // Call 2
-  const logger = createLogger(); // Triggers call 1 again!
-  // ...
-  logger.info({
-    host: loadConfig().rest.host,  // Call 3
-    port: loadConfig().rest.port   // Call 4
-  });
-}
-```
-
-### The Solution (DI Pattern)
-
-Load config **once** at application entry, then **inject** as parameter:
+**Driven ports** (secondary — the core calls *out*):
+- `LoggerPort` — structured logging interface
+- `ContextFactory` — user-provided context for handler injection
 
 ```typescript
-// ✅ GOOD: Inject dependencies
-export function createLogger(config: ServerConfig): PinoLogger {
-  // Config passed as parameter
-  return pino({
-    level: config.logging.level,
-    // ...
-  });
-}
-
-export const createRestServer = async ({ registry, config }: RestServerOptions) => {
-  const logger = createLogger(config);  // Injected config
-  // ...
-  logger.info({
-    host: config.rest.host,  // Same config instance
-    port: config.rest.port
-  });
-}
-
-// At application entry point (src/server/rest.ts bottom)
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const config = loadConfig();  // Load ONCE
-  const server = await createRestServer({ registry, config });
+// src/ports/logger.ts
+export interface LoggerPort {
+  info(msg: string, context?: Record<string, unknown>): void;
+  warn(msg: string, context?: Record<string, unknown>): void;
+  error(msg: string, context?: Record<string, unknown>): void;
+  child(bindings: Record<string, unknown>): LoggerPort;
 }
 ```
 
-### Benefits
+### 4. Adapters (`src/adapters/`)
 
-1. **Deterministic Behavior**: Config loaded once at startup
-2. **Testability**: Easy to inject mock configs
-3. **No Race Conditions**: Single source of truth
-4. **Explicit Dependencies**: Clear function contracts
+Infrastructure implementations of ports. Each adapter is a **plugin** — you can swap Fastify for Express without touching domain or application code.
 
-### Factory Pattern for Dependencies
+| Adapter | Port | Framework |
+|---------|------|-----------|
+| `adapters/fastify/` | TransportPort (driving) | Fastify |
+| `adapters/express/` | TransportPort (driving) | Express *(future)* |
+| `adapters/fastmcp/` | TransportPort (driving) | FastMCP |
+| `adapters/cli/` | TransportPort (driving) | Node.js process |
+| `adapters/pino/` | LoggerPort (driven) | Pino |
 
-When a component needs dependencies, use factory functions:
+**Key design**: adapters do **not** own server lifecycle. They produce middleware/handlers that can be mounted on an existing server:
 
 ```typescript
-// ✅ GOOD: Factory accepts dependencies
-export function createErrorHandler(logger: PinoLogger) {
-  return function errorHandler(error, request, reply) {
-    logger.error({ error }, 'Request error');
-    // ...
-  };
-}
+// Standalone (current behavior)
+const app = Fastify();
+registerRivetBenchRoutes(app, { registry, logger });
+await app.listen({ port: 3000 });
 
-// Usage
-const logger = createLogger(config);
-const errorHandler = createErrorHandler(logger);
-fastify.setErrorHandler(errorHandler);
+// Embedded in existing Express app
+const app = express();
+app.use('/api', createRivetBenchExpressRouter({ registry, logger }));
+app.listen(3000);
+
+// Embedded MCP on existing Hono server
+const app = new Hono();
+app.route('/mcp', createMcpHonoRoute({ registry, logger }));
 ```
 
----
+### 5. Composition Root (`src/composition/`)
 
-## Error Handling
-
-### Error Class Hierarchy
-
-All errors extend `RivetBenchError` (from `src/core/errors.ts`):
+The only place where concrete implementations are wired together. No business logic lives here.
 
 ```typescript
-export abstract class RivetBenchError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number,
-    public readonly code: string,
-    public readonly details?: Record<string, unknown>
-  ) {
-    super(message);
-    this.name = this.constructor.name;
-  }
-
-  toJSON() { /* ... */ }
-}
-```
-
-### Built-in Error Types
-
-| Error Class | Status Code | Use Case |
-|-------------|-------------|----------|
-| `ValidationError` | 400 | Input validation failures |
-| `EndpointNotFoundError` | 404 | Unknown endpoint requested |
-| `InternalServerError` | 500 | Unexpected server errors |
-| `ConfigurationError` | 500 | Invalid configuration |
-
-### Usage Examples
-
-```typescript
-// ✅ Validation error with context
-throw new ValidationError('Invalid input', {
-  field: 'email',
-  reason: 'Invalid format',
-  value: input.email
-});
-
-// ✅ Endpoint not found
-throw new EndpointNotFoundError('myEndpoint');
-
-// ✅ Internal error with stack trace
-try {
-  await dangerousOperation();
-} catch (err) {
-  throw new InternalServerError('Operation failed', {
-    operation: 'dangerousOperation',
-    originalError: err instanceof Error ? err.message : String(err)
-  });
-}
-```
-
-### Error Response Format
-
-**REST API**:
-```json
-{
-  "error": {
-    "name": "ValidationError",
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid endpoint input",
-    "details": {
-      "field": "email",
-      "reason": "Invalid format"
-    }
-  }
-}
-```
-
-**MCP Tools**:
-```json
-{
-  "content": [{
-    "type": "text",
-    "text": "{\"error\": {\"name\": \"ValidationError\", ...}}"
-  }],
-  "isError": true
-}
-```
-
-### Creating Custom Errors
-
-```typescript
-export class RateLimitError extends RivetBenchError {
-  constructor(details?: Record<string, unknown>) {
-    super(
-      'Rate limit exceeded',
-      429,
-      'RATE_LIMIT_EXCEEDED',
-      details
-    );
-  }
-}
-
-// Usage
-throw new RateLimitError({
-  limit: 100,
-  window: '1m',
-  reset: Date.now() + 60000
-});
-```
-
----
-
-## Logging
-
-### Configuration
-
-Logger created via DI pattern:
-
-```typescript
-import { createLogger } from './core/logger.js';
+// src/composition/standalone.ts
+import { loadConfig } from '../config/index.js';
+import { createDefaultRegistry } from '../endpoints/index.js';
+import { createPinoLogger } from '../adapters/pino/logger.js';
+import { createFastifyServer } from '../adapters/fastify/server.js';
 
 const config = loadConfig();
-const logger = createLogger(config);  // Inject config
+const logger = createPinoLogger(config);
+const registry = createDefaultRegistry();
+
+const server = createFastifyServer({ registry, config, logger });
+await server.start();
 ```
 
-### Structured Logging
+### 6. Config (`src/config/`)
 
-Always use structured logging with context objects:
+Configuration loading from environment variables. Sits outside the hexagon — consumed by the composition root and passed down as parameters.
 
-```typescript
-// ✅ GOOD - Structured with context
-logger.info({ 
-  endpoint: 'echo', 
-  duration: 150,
-  requestId: req.id
-}, 'Request completed');
+### 7. Endpoints (`src/endpoints/`)
 
-// ❌ BAD - String interpolation
-logger.info(`Request completed for echo in 150ms`);
-```
-
-### Log Levels
-
-| Level | Use Case | Example |
-|-------|----------|---------|
-| `trace` | Detailed debugging | Function entry/exit |
-| `debug` | Debugging info | Variable states |
-| `info` | Normal operations | Server started |
-| `warn` | Recoverable issues | Validation errors |
-| `error` | Errors | Unexpected failures |
-| `fatal` | Critical errors | System crash |
-
-### Child Loggers
-
-Create child loggers for persistent context:
-
-```typescript
-import { createChildLogger } from './core/logger.js';
-
-const requestLogger = createChildLogger(logger, {
-  requestId: req.id,
-  endpoint: req.params.name
-});
-
-requestLogger.info('Processing request');  // Includes context automatically
-```
-
-### MCP-Specific Logging
-
-**CRITICAL**: MCP stdio transport uses stdout for JSON-RPC protocol.
-
-```typescript
-// ✅ GOOD - Safe for MCP
-console.error('Debug info');        // Goes to stderr
-context.log.info('Debug info');     // FastMCP logger (stderr)
-
-// ❌ BAD - BREAKS MCP stdio protocol
-console.log('Debug info');    // Goes to stdout → breaks protocol
-console.info('Debug info');   // Goes to stdout → breaks protocol
-console.warn('Debug info');   // Goes to stdout → breaks protocol
-```
-
-### Request ID Tracking
-
-Every request gets a unique ID (RFC 4122 UUID):
-
-**REST**:
-- Auto-generated via `crypto.randomUUID()`
-- Returned in header: `X-Request-Id: 2af7e653-...`
-- Passed to handlers via `config.requestId`
-
-**MCP**:
-- Generated per tool execution via `crypto.randomUUID()`
-- Passed to handlers via `config.requestId`
-- Used for application-level tracing
-
-**Usage in handlers**:
-```typescript
-export default makeEndpoint({
-  name: 'echo',
-  handler: async ({ input, config }) => {
-    logger.info({ requestId: config.requestId }, 'Processing');
-    // ...
-  }
-});
-```
+User-defined endpoint implementations. These are pure domain objects — they import only from `src/domain/` and `zod`.
 
 ---
 
-## Transport Parity
+## Target Directory Structure
 
-All transports (REST, MCP) must maintain behavioral consistency:
-
-### 1. Request ID Propagation
-
-- Every transport generates unique request ID via `crypto.randomUUID()`
-- Include in error logs for traceability
-- Pass to handlers via `config.requestId`
-
-### 2. Schema Validation
-
-- All transports validate input/output using same Zod schemas
-- Validation errors return consistent format
-
-### 3. Error Handling
-
-- All transports convert errors to `RivetBenchError` format
-- Consistent client experience across transports
-
-### 4. Observability
-
-- All transports support request tracing, logging, debugging
-- Consistent context propagation
-
-### Testing Transport Parity
-
-Add regression tests for cross-transport contracts:
-
-```typescript
-// Example from test/server/request-id-parity.test.ts
-describe('Transport Parity', () => {
-  it('should provide request ID to REST handlers', async () => {
-    // Test REST transport
-  });
-
-  it('should provide request ID to MCP handlers', async () => {
-    // Test MCP transport
-  });
-});
+```
+src/
+├── domain/                    # Inner hexagon — pure business logic
+│   ├── endpoint.ts            # EndpointDefinition, makeEndpoint()
+│   ├── registry.ts            # EndpointRegistry interface + InMemoryEndpointRegistry
+│   └── errors.ts              # RivetBenchError hierarchy
+│
+├── application/               # Use cases — orchestration layer
+│   ├── invoke-endpoint.ts     # validate → call → validate pipeline
+│   └── list-endpoints.ts      # list + enrich endpoints
+│
+├── ports/                     # Port interfaces
+│   └── logger.ts              # LoggerPort interface
+│
+├── adapters/                  # Infrastructure implementations
+│   ├── fastify/               # Fastify REST adapter
+│   │   ├── server.ts          # createFastifyServer()
+│   │   ├── error-handler.ts   # Fastify-specific error mapping
+│   │   └── openapi.ts         # OpenAPI generation (Fastify-specific)
+│   ├── fastmcp/               # FastMCP adapter
+│   │   └── server.ts          # createMcpServer()
+│   ├── cli/                   # CLI adapter
+│   │   ├── adapter.ts         # createCli()
+│   │   └── arg-parser.ts      # CLI argument parsing
+│   └── pino/                  # Pino logger adapter
+│       └── logger.ts          # createPinoLogger() implements LoggerPort
+│
+├── config/                    # Configuration loading
+│   └── index.ts               # loadConfig()
+│
+├── composition/               # Wiring / entry points
+│   └── standalone.ts          # Full standalone server
+│
+├── endpoints/                 # User-defined endpoints
+│   ├── index.ts               # createDefaultRegistry()
+│   ├── echo.ts
+│   ├── uppercase.ts
+│   └── myfunc.ts
+│
+├── index.ts                   # Public API exports
+└── core.ts                    # Lightweight sub-export (domain only)
 ```
 
----
+## Dependency Rule
 
-## Architecture Checklist
+Dependencies flow **inward only**:
 
-Before committing, verify:
+```
+adapters → ports → application → domain
+                                   ↑
+composition ────────────────────────┘ (wires everything)
+config ─────────────────────────────┘ (read at composition time)
+```
 
-- [ ] Config loaded once at app entry
-- [ ] All dependencies injected as parameters
-- [ ] No `loadConfig()` calls in business logic
-- [ ] Using specific error classes from `src/core/errors.ts`
-- [ ] Structured logging with context objects
-- [ ] No `console.log()` in MCP code
-- [ ] Request ID propagated through pipeline
-- [ ] Transport parity maintained
+**Forbidden**:
+- `domain/` importing from `application/`, `ports/`, `adapters/`, or `config/`
+- `application/` importing from `adapters/`
+- `ports/` importing from `adapters/`
+
+**Allowed**:
+- `adapters/` importing from `ports/`, `application/`, `domain/`
+- `application/` importing from `domain/`, `ports/`
+- `composition/` importing from everything (it's the wiring layer)
+
+## SOLID Principles (Hexagonal Edition)
+
+### SRP — Single Responsibility
+Each layer has one job: domain defines contracts, application orchestrates, ports declare interfaces, adapters implement infrastructure.
+
+### OCP — Open/Closed
+Adding a new transport (e.g. gRPC) means adding a new adapter — no changes to domain or application.
+
+### LSP — Liskov Substitution
+Any adapter implementing `LoggerPort` can replace Pino without breaking the application service.
+
+### ISP — Interface Segregation
+`LoggerPort` is a minimal interface. Transports implement only what they need.
+
+### DIP — Dependency Inversion
+The application service depends on `LoggerPort` (abstraction), not on Pino (concrete). The composition root wires the concrete to the abstract.
+
+## Migration Path
+
+The refactor from the current structure to hexagonal can be done incrementally:
+
+1. **Extract application service** — Move the duplicated validate→invoke→validate pipeline into `src/application/invoke-endpoint.ts`. Have all three transports call it. (Highest value, lowest risk.)
+
+2. **Extract logger port** — Define `LoggerPort` interface in `src/ports/logger.ts`. Create Pino adapter. Pass through DI.
+
+3. **Move domain types** — Rename `src/core/` to `src/domain/`. Update imports. (Mechanical refactor.)
+
+4. **Relocate adapters** — Move `src/server/rest.ts` → `src/adapters/fastify/`, `src/server/mcp.ts` → `src/adapters/fastmcp/`, `src/cli/` → `src/adapters/cli/`.
+
+5. **Extract composition root** — Move bootstrap logic from `isMainModule` blocks into `src/composition/`.
+
+6. **Decouple error handler** — Move Fastify-specific error handling from `core/error-handler.ts` to `adapters/fastify/`.
+
+7. **Move OpenAPI** — Relocate `core/openapi.ts` to `adapters/fastify/openapi.ts` (it's REST-adapter-specific).
+
+Each step is independently deployable and testable.

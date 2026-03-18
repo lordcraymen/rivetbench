@@ -1,31 +1,137 @@
 {
-  "generatedAt": "2025-11-11T12:00:00.000Z",
-  "total": 8,
+  "generatedAt": "2026-03-18T06:38:58.737Z",
+  "total": 9,
   "adrs": [
     {
       "id": "ADR-0001",
-      "title": "ADR-0001: Dual Transport Architecture (REST + MCP)",
+      "title": "ADR-0001: Hexagonal Architecture (Ports & Adapters)",
       "status": "accepted",
-      "summary": "Implement unified endpoints that can be exposed over both REST HTTP and MCP (Model Context Protocol) transports, enabling AI agents and traditional HTTP clients to use the same business logic.",
-      "date": "2025-10-07",
+      "summary": "Adopt hexagonal architecture to decouple domain logic from infrastructure, enabling transport adapters to be swapped or composed without touching business logic.",
+      "date": "2026-03-18",
       "tags": [
         "architecture",
-        "transport",
-        "mcp",
-        "rest"
+        "hexagonal",
+        "ports-and-adapters"
       ],
       "modules": [
-        "src/server/",
-        "src/core/"
+        "src/domain/",
+        "src/application/",
+        "src/ports/",
+        "src/adapters/"
       ],
-      "path": "docs/adr/ADR-0001-dual-transport-architecture.md"
+      "path": "docs/adr/ADR-0001-hexagonal-architecture.md"
     },
     {
       "id": "ADR-0002",
-      "title": "ADR-0002: RPC-over-REST Design Pattern",
+      "title": "ADR-0002: Application Service Layer",
       "status": "accepted",
-      "summary": "Use RPC-over-REST pattern with POST-only endpoints dispatched by name rather than traditional RESTful resource modeling, optimizing for AI agent interaction and unified transport behavior.",
-      "date": "2025-10-07",
+      "summary": "Introduce an application service layer with a single invokeEndpoint() function that all transports delegate to, eliminating the duplicated validate-invoke-validate pipeline.",
+      "date": "2026-03-18",
+      "tags": [
+        "architecture",
+        "hexagonal",
+        "application-service",
+        "use-case"
+      ],
+      "modules": [
+        "src/application/"
+      ],
+      "path": "docs/adr/ADR-0002-application-service-layer.md"
+    },
+    {
+      "id": "ADR-0003",
+      "title": "ADR-0003: Zod Schema as Domain Contract",
+      "status": "accepted",
+      "summary": "Use Zod schemas as the single source of truth for input/output validation, TypeScript types, OpenAPI generation, and MCP tool definitions across all transports.",
+      "date": "2026-03-18",
+      "tags": [
+        "architecture",
+        "validation",
+        "schemas",
+        "type-safety"
+      ],
+      "modules": [
+        "src/domain/endpoint.ts"
+      ],
+      "path": "docs/adr/ADR-0003-zod-schema-domain-contract.md"
+    },
+    {
+      "id": "ADR-0004",
+      "title": "ADR-0004: Port Interfaces for Infrastructure Abstraction",
+      "status": "accepted",
+      "summary": "Define port interfaces (LoggerPort, ContextFactory) so the application layer depends on abstractions, not concrete infrastructure like Pino or FastMCP.",
+      "date": "2026-03-18",
+      "tags": [
+        "architecture",
+        "hexagonal",
+        "ports",
+        "dependency-inversion"
+      ],
+      "modules": [
+        "src/ports/"
+      ],
+      "path": "docs/adr/ADR-0004-port-interfaces.md"
+    },
+    {
+      "id": "ADR-0005",
+      "title": "ADR-0005: Framework-Agnostic Transport Adapters",
+      "status": "accepted",
+      "summary": "Transport adapters produce mountable handlers rather than owning server lifecycle, enabling RivetBench to be embedded in existing Express, Hono, or Fastify applications.",
+      "date": "2026-03-18",
+      "tags": [
+        "architecture",
+        "hexagonal",
+        "adapters",
+        "middleware",
+        "embedding"
+      ],
+      "modules": [
+        "src/adapters/"
+      ],
+      "path": "docs/adr/ADR-0005-framework-agnostic-adapters.md"
+    },
+    {
+      "id": "ADR-0006",
+      "title": "ADR-0006: Structured Error Handling",
+      "status": "accepted",
+      "summary": "Domain defines a RivetBenchError hierarchy for business errors. Adapters map these to transport-specific responses. No transport types in the domain.",
+      "date": "2026-03-18",
+      "tags": [
+        "architecture",
+        "error-handling",
+        "domain"
+      ],
+      "modules": [
+        "src/domain/errors.ts",
+        "src/adapters/"
+      ],
+      "path": "docs/adr/ADR-0006-structured-error-handling.md"
+    },
+    {
+      "id": "ADR-0007",
+      "title": "ADR-0007: MCP Stdio Protocol Safety",
+      "status": "accepted",
+      "summary": "Restrict all diagnostic output to stderr when running MCP in stdio mode. No console.log() in MCP adapter code. Use LoggerPort for safe, transport-aware logging.",
+      "date": "2026-03-18",
+      "tags": [
+        "architecture",
+        "mcp",
+        "stdio",
+        "logging",
+        "protocol"
+      ],
+      "modules": [
+        "src/adapters/fastmcp/",
+        "src/ports/logger.ts"
+      ],
+      "path": "docs/adr/ADR-0007-mcp-stdio-protocol-safety.md"
+    },
+    {
+      "id": "ADR-0008",
+      "title": "ADR-0008: RPC-over-REST Design Pattern",
+      "status": "accepted",
+      "summary": "Use RPC-over-REST with POST-only endpoints dispatched by name (POST /rpc/:name) rather than traditional RESTful resource modelling, optimising for transport parity with MCP tools.",
+      "date": "2026-03-18",
       "tags": [
         "architecture",
         "rest",
@@ -33,111 +139,16 @@
         "api-design"
       ],
       "modules": [
-        "src/server/rest.ts",
-        "src/core/"
+        "src/adapters/fastify/"
       ],
-      "path": "docs/adr/ADR-0002-rpc-over-rest-design.md"
+      "path": "docs/adr/ADR-0008-rpc-over-rest-pattern.md"
     },
     {
-      "id": "ADR-0003",
-      "title": "ADR-0003: Dependency Injection Pattern",
+      "id": "ADR-0009",
+      "title": "ADR-0009: CLI Flag and Parameter Separation",
       "status": "accepted",
-      "summary": "Load configuration once at application entry point and inject as parameter to all components, eliminating hidden dependencies and enabling deterministic testing.",
-      "date": "2025-10-07",
-      "tags": [
-        "architecture",
-        "dependency-injection",
-        "configuration",
-        "solid-principles"
-      ],
-      "modules": [
-        "src/config/",
-        "src/server/",
-        "src/core/"
-      ],
-      "path": "docs/adr/ADR-0003-dependency-injection-pattern.md"
-    },
-    {
-      "id": "ADR-0004",
-      "title": "ADR-0004: Zod Schema-Driven Architecture",
-      "status": "accepted",
-      "summary": "Use Zod schemas as the single source of truth for input/output validation, TypeScript types, OpenAPI documentation, and MCP tool definitions across all transports.",
-      "date": "2025-10-07",
-      "tags": [
-        "architecture",
-        "validation",
-        "schemas",
-        "type-safety",
-        "openapi"
-      ],
-      "modules": [
-        "src/core/endpoint.ts",
-        "src/core/openapi.ts"
-      ],
-      "path": "docs/adr/ADR-0004-zod-schema-driven-architecture.md"
-    },
-    {
-      "id": "ADR-0005",
-      "title": "ADR-0005: MCP Stdio Logging Constraints",
-      "status": "accepted",
-      "summary": "Restrict all diagnostic output to stderr when running MCP in stdio mode to prevent corruption of JSON-RPC protocol stream on stdout.",
-      "date": "2025-10-07",
-      "tags": [
-        "architecture",
-        "logging",
-        "mcp",
-        "stdio",
-        "protocol"
-      ],
-      "modules": [
-        "src/core/logger.ts",
-        "src/server/mcp.ts"
-      ],
-      "path": "docs/adr/ADR-0005-mcp-stdio-logging-constraints.md"
-    },
-    {
-      "id": "ADR-0006",
-      "title": "ADR-0006: Structured Error Handling",
-      "status": "accepted",
-      "summary": "Define custom error classes extending RivetBenchError base class with structured JSON serialization for consistent error responses across REST and MCP transports.",
-      "date": "2025-10-07",
-      "tags": [
-        "architecture",
-        "error-handling",
-        "transport-parity",
-        "json"
-      ],
-      "modules": [
-        "src/core/errors.ts",
-        "src/core/error-handler.ts"
-      ],
-      "path": "docs/adr/ADR-0006-structured-error-handling.md"
-    },
-    {
-      "id": "ADR-0007",
-      "title": "ADR-0007: Transport Parity Requirements",
-      "status": "accepted",
-      "summary": "Enforce identical behavior across REST and MCP transports including request ID generation, validation, error handling, and request tracing for consistent client experience.",
-      "date": "2025-10-07",
-      "tags": [
-        "architecture",
-        "transport-parity",
-        "consistency",
-        "testing"
-      ],
-      "modules": [
-        "src/server/rest.ts",
-        "src/server/mcp.ts",
-        "test/features/"
-      ],
-      "path": "docs/adr/ADR-0007-transport-parity-requirements.md"
-    },
-    {
-      "id": "ADR-0008",
-      "title": "ADR-0008: CLI Flag and Parameter Separation",
-      "status": "active",
-      "summary": "Use double dashes (--) for CLI flags and single dash (-) for endpoint parameters to avoid naming collisions. Rename --input to --params-json for clarity.",
-      "date": "2025-11-11",
+      "summary": "Use double dashes (--) for CLI flags and single dash (-) for endpoint parameters to avoid naming collisions between framework flags and user-defined endpoint input.",
+      "date": "2026-03-18",
       "tags": [
         "cli",
         "flags",
@@ -145,11 +156,9 @@
         "collision-avoidance"
       ],
       "modules": [
-        "src/cli/",
-        "test/cli/",
-        "test/features/"
+        "src/adapters/cli/"
       ],
-      "path": "docs/adr/ADR-0008-cli-flag-parameter-separation.md"
+      "path": "docs/adr/ADR-0009-cli-flag-parameter-separation.md"
     }
   ]
 }

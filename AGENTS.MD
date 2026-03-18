@@ -16,7 +16,7 @@ P0 Correctness > P1 Security > P2 Maintainability > P3 Performance > P4 Speed.
 - [SOLID-DIP-03] Load config **once** at app entry; pass `config` to all components.
 - [CLEAN-NAM-01] Names are descriptive; abbreviations only: cfg, ctx, idx, tmp, req, res.
 - [CLEAN-FUNC-02] Functions ≤ 30 LOC; >2 branches → extract.
-- [CLEAN-ERR-03] No bare `catch`; use specific error classes from `src/core/errors.ts`.
+- [CLEAN-ERR-03] No bare `catch`; use specific error classes from `src/domain/errors.ts` (currently `src/core/errors.ts` during migration).
 - [CLEAN-IMM-04] Prefer pure functions; avoid global state.
 
 ## Style & Tooling
@@ -59,9 +59,10 @@ After completing a feature or refactor:
 **When you need more detail**, consult these docs in order:
 
 ### Architecture & Patterns
+- **Hexagonal Architecture**: See `docs/ARCHITECTURE.md` → Layer descriptions, dependency rule, target structure
 - **SOLID Principles**: See `docs/ARCHITECTURE.md` → SOLID section
-- **Dependency Injection**: See `docs/ARCHITECTURE.md` → DI Pattern section
-- **Error Handling**: See `docs/ARCHITECTURE.md` → Error Handling section
+- **ADRs**: See `docs/adr/README.md` → All architectural decisions
+- **Error Handling**: See `docs/ARCHITECTURE.md` → Error Handling, ADR-0006
 - **Lessons Learned**: See `docs/LESSONS_LEARNED.md` → Past decisions & rationale
 
 ### Testing
@@ -128,7 +129,9 @@ context.log.info('Debug info');
 ## Context Hierarchy
 
 **Level 1 (Always)**: This file (AGENTS.MD)
-**Level 2 (On demand)**: `docs/ARCHITECTURE.md`, `docs/TESTING.md`, `docs/CONTRIBUTING.md`
+**Level 2 (On demand)**: `docs/ARCHITECTURE.md`, `docs/TESTING.md`, `docs/adr/README.md`
 **Level 3 (Specialized)**: `docs/MCP_GUIDE.md` (MCP work only)
 
 Read `README.md` for project overview and user-facing documentation.
+
+> **Legacy docs**: Previous architecture docs (v0.3.0 and earlier) are available in git history at tag `v0.3.0`. Do not reference them for new work.

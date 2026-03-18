@@ -1,14 +1,15 @@
 # Active Architecture Decisions
 
-Generated at 2025-11-11T12:00:00.000Z
+Generated at 2026-03-18T06:38:58.737Z
 
 | ID | Title | Status | Summary |
 | --- | --- | --- | --- |
-| ADR-0001 | ADR-0001: Dual Transport Architecture (REST + MCP) | accepted | Implement unified endpoints that can be exposed over both REST HTTP and MCP (Model Context Protocol) transports, enabling AI agents and traditional HTTP clients to use the same business logic. |
-| ADR-0002 | ADR-0002: RPC-over-REST Design Pattern | accepted | Use RPC-over-REST pattern with POST-only endpoints dispatched by name rather than traditional RESTful resource modeling, optimizing for AI agent interaction and unified transport behavior. |
-| ADR-0003 | ADR-0003: Dependency Injection Pattern | accepted | Load configuration once at application entry point and inject as parameter to all components, eliminating hidden dependencies and enabling deterministic testing. |
-| ADR-0004 | ADR-0004: Zod Schema-Driven Architecture | accepted | Use Zod schemas as the single source of truth for input/output validation, TypeScript types, OpenAPI documentation, and MCP tool definitions across all transports. |
-| ADR-0005 | ADR-0005: MCP Stdio Logging Constraints | accepted | Restrict all diagnostic output to stderr when running MCP in stdio mode to prevent corruption of JSON-RPC protocol stream on stdout. |
-| ADR-0006 | ADR-0006: Structured Error Handling | accepted | Define custom error classes extending RivetBenchError base class with structured JSON serialization for consistent error responses across REST and MCP transports. |
-| ADR-0007 | ADR-0007: Transport Parity Requirements | accepted | Enforce identical behavior across REST and MCP transports including request ID generation, validation, error handling, and request tracing for consistent client experience. |
-| ADR-0008 | ADR-0008: CLI Flag and Parameter Separation | active | Use double dashes (--) for CLI flags and single dash (-) for endpoint parameters to avoid naming collisions. Rename --input to --params-json for clarity. |
+| ADR-0001 | ADR-0001: Hexagonal Architecture (Ports & Adapters) | accepted | Adopt hexagonal architecture to decouple domain logic from infrastructure, enabling transport adapters to be swapped or composed without touching business logic. |
+| ADR-0002 | ADR-0002: Application Service Layer | accepted | Introduce an application service layer with a single invokeEndpoint() function that all transports delegate to, eliminating the duplicated validate-invoke-validate pipeline. |
+| ADR-0003 | ADR-0003: Zod Schema as Domain Contract | accepted | Use Zod schemas as the single source of truth for input/output validation, TypeScript types, OpenAPI generation, and MCP tool definitions across all transports. |
+| ADR-0004 | ADR-0004: Port Interfaces for Infrastructure Abstraction | accepted | Define port interfaces (LoggerPort, ContextFactory) so the application layer depends on abstractions, not concrete infrastructure like Pino or FastMCP. |
+| ADR-0005 | ADR-0005: Framework-Agnostic Transport Adapters | accepted | Transport adapters produce mountable handlers rather than owning server lifecycle, enabling RivetBench to be embedded in existing Express, Hono, or Fastify applications. |
+| ADR-0006 | ADR-0006: Structured Error Handling | accepted | Domain defines a RivetBenchError hierarchy for business errors. Adapters map these to transport-specific responses. No transport types in the domain. |
+| ADR-0007 | ADR-0007: MCP Stdio Protocol Safety | accepted | Restrict all diagnostic output to stderr when running MCP in stdio mode. No console.log() in MCP adapter code. Use LoggerPort for safe, transport-aware logging. |
+| ADR-0008 | ADR-0008: RPC-over-REST Design Pattern | accepted | Use RPC-over-REST with POST-only endpoints dispatched by name (POST /rpc/:name) rather than traditional RESTful resource modelling, optimising for transport parity with MCP tools. |
+| ADR-0009 | ADR-0009: CLI Flag and Parameter Separation | accepted | Use double dashes (--) for CLI flags and single dash (-) for endpoint parameters to avoid naming collisions between framework flags and user-defined endpoint input. |
