@@ -40,3 +40,16 @@ logger.info(
   },
   'Server started (REST + MCP)',
 );
+
+// Graceful shutdown — close Fastify so the onClose hook cleans up MCP sessions
+// and the port is released before the process exits.
+let shuttingDown = false;
+const shutdown = async (): Promise<void> => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info('Shutting down…');
+  await restServer.fastify.close();
+  process.exit(0);
+};
+process.on('SIGINT', () => void shutdown());
+process.on('SIGTERM', () => void shutdown());

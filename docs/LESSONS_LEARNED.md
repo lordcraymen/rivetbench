@@ -4,6 +4,22 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## March 2026 — Stdio Facade Shutdown: Wait for Child Exit
+
+### `process.exit()` after `child.kill()` is a race condition
+
+Sending SIGTERM to a child process and immediately calling `process.exit(0)` races: the parent exits before the child processes the signal. The child keeps running, holding the port open. Fix: listen for the child's `exit` event *before* sending SIGTERM, and only call `process.exit()` in the handler. Add a SIGKILL timeout to prevent hangs.
+
+### Re-entrant shutdown guards prevent double-exit
+
+Signal handlers (SIGINT, SIGTERM, stdin `end`/`close`) can fire concurrently. Without a `shuttingDown` guard, the shutdown path executes multiple times — potentially sending duplicate signals or calling `process.exit()` with conflicting codes.
+
+### Composition roots need graceful shutdown too
+
+`standalone.ts` had no signal handling — Node.js default terminates the process without running Fastify's `onClose` hooks, leaving MCP sessions and TCP ports unclean. Always register SIGINT/SIGTERM in scripts that own long-running servers.
+
+---
+
 ## v0.9.0 — Sub-path Exports, Test Co-location & CLI Cold Start
 
 ### Sub-path exports enable tree-shaking without a monorepo

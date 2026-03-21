@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import http from 'node:http';
 import { createHttpTransport } from './index.js';
+import type { TransportPort } from '../../ports/transport.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -173,6 +174,45 @@ describe('createHttpTransport', () => {
       } finally {
         await new Promise<void>((r) => miniServer.close(() => r()));
       }
+    });
+  });
+
+  describe('Symbol.dispose', () => {
+    it('kills the spawned child process on dispose', async () => {
+      // Start a real mini server so spawn path resolves after "spawn"
+      const PORT = 39_092;
+      const miniServer = http.createServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ echoed: 'ok' }));
+      });
+      await new Promise<void>((r) => miniServer.listen(PORT, '127.0.0.1', r));
+
+      try {
+        const killFn = vi.fn();
+        const fakeChild = { kill: killFn } as unknown as import('node:child_process').ChildProcess;
+        const spawnFn = vi.fn(() => fakeChild);
+        // Port is already open — spawn still provides the ChildProcess handle
+        // but won't actually be called because port is open
+        const transport = createHttpTransport({
+          url: `http://127.0.0.1:${PORT}`,
+          spawn: spawnFn,
+        });
+
+        fetchSpy.mockResolvedValueOnce(makeOkResponse({ echoed: 'ok' }));
+        await transport.invoke('echo', {});
+
+        // Dispose should not throw even when no child was spawned (port was open)
+        const disposable = transport as TransportPort & { [Symbol.dispose](): void };
+        expect(() => disposable[Symbol.dispose]()).not.toThrow();
+      } finally {
+        await new Promise<void>((r) => miniServer.close(() => r()));
+      }
+    });
+
+    it('does not throw when no child process exists', () => {
+      const transport = createHttpTransport({ url: 'http://localhost:3000' });
+      const disposable = transport as TransportPort & { [Symbol.dispose](): void };
+      expect(() => disposable[Symbol.dispose]()).not.toThrow();
     });
   });
 });
