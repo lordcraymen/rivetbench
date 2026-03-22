@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-18T06:38:58.737Z",
-  "total": 9,
+  "generatedAt": "2026-03-22T11:24:47.548Z",
+  "total": 10,
   "adrs": [
     {
       "id": "ADR-0001",
@@ -159,6 +159,23 @@
         "src/adapters/cli/"
       ],
       "path": "docs/adr/ADR-0009-cli-flag-parameter-separation.md"
+    },
+    {
+      "id": "ADR-0010",
+      "title": "ADR-0010: Flatten Discriminated Unions for MCP Tool Schemas",
+      "status": "accepted",
+      "summary": "Flatten Zod discriminated unions into a single object schema when registering MCP tools, so agents see all parameters instead of an empty schema.",
+      "date": "2026-03-22",
+      "tags": [
+        "mcp",
+        "schemas",
+        "zod",
+        "adapters"
+      ],
+      "modules": [
+        "src/adapters/mcp/handler.ts"
+      ],
+      "path": "docs/adr/ADR-0010-discriminated-union-flattening-for-mcp.md"
     }
   ]
 }
