@@ -24,6 +24,7 @@ import type { TransportPort } from '../../ports/transport.js';
 import type { EndpointRegistry } from '../../domain/registry.js';
 import type { LoggerPort } from '../../ports/logger.js';
 import { toRivetBenchError } from '../../domain/errors.js';
+import { flattenForMcp } from './flatten-for-mcp.js';
 
 /**
  * OpenAPI path item describing the MCP Streamable HTTP endpoint.
@@ -185,11 +186,15 @@ function registerTools(mcp: McpServer, options: McpHandlerOptions): void {
   const { transport, registry, logger } = options;
 
   for (const endpoint of registry.list()) {
+    // ADR-0010: Flatten discriminated unions so MCP clients see all parameters.
+    // Cast needed: registerTool's generics cause TS2589 with ZodTypeAny return;
+    // validation still uses the original endpoint.input via transport.invoke.
+    const inputSchema = flattenForMcp(endpoint.input) as typeof endpoint.input;
     mcp.registerTool(
       endpoint.name,
       {
         description: endpoint.description || endpoint.summary,
-        inputSchema: endpoint.input,
+        inputSchema,
       },
       async (args: Record<string, unknown>) => {
         try {

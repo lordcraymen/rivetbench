@@ -4,6 +4,18 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## March 2026 — ADR-0010: Discriminated Union Flattening for MCP
+
+### MCP SDK `normalizeObjectSchema` only recognizes `z.object()`
+
+`ZodDiscriminatedUnion` has no `.shape` property. The MCP SDK's `normalizeObjectSchema` falls back to `{ "type": "object", "properties": {} }` — agents see zero parameters. The fix: flatten into `z.object()` at the adapter boundary, keeping the original schema for validation.
+
+### `registerTool` generics cause TS2589 with `ZodTypeAny` return types
+
+The MCP SDK's `registerTool<InputArgs>` triggers excessive type instantiation depth when `inputSchema` is typed as `ZodTypeAny`. The original code worked because `AnyEndpointDefinition.input` is typed `any` (via `EndpointDefinition<any, any, any>`). Fix: cast the flattened schema back to `typeof endpoint.input` to preserve the `any` pass-through.
+
+---
+
 ## March 2026 — Stdio Facade Shutdown: Wait for Child Exit
 
 ### `process.exit()` after `child.kill()` is a race condition
