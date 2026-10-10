@@ -4,6 +4,21 @@ Update this file after every feature or refactor. Remove entries that are no lon
 
 ---
 
+## October 2026 — Cross-Package Schemas and Structured MCP Results
+
+### Zod schemas are structural contracts, not module-identity contracts
+
+`instanceof` fails when a consumer and RivetBench load separate physical Zod
+copies. Adapter schema recognition must use guarded schema metadata and must be
+tested with a dependency alias that creates a genuinely separate module instance.
+
+### MCP output schemas require structured content
+
+When a tool advertises `outputSchema`, successful results must include
+`structuredContent`. Returning the existing JSON text alongside it preserves
+older clients. Primitive and array outputs stay text-only rather than acquiring
+an implicit transport wrapper.
+
 ## March 2026 — ADR-0010: Discriminated Union Flattening for MCP
 
 ### MCP SDK `normalizeObjectSchema` only recognizes `z.object()`

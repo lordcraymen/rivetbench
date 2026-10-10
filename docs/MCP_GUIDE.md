@@ -31,8 +31,9 @@ In the hexagonal model, the MCP adapter:
 
 1. Receives a tool call from FastMCP
 2. Delegates to `invokeEndpoint()` (application service)
-3. Formats the result as MCP tool output (`{ content: [{ type: 'text', text }] }`)
-4. Returns errors as `{ isError: true, content: [...] }`
+3. Advertises object-compatible endpoint output schemas through `tools/list`
+4. Returns object outputs as both `structuredContent` and JSON text
+5. Returns errors as `{ isError: true, content: [...] }`
 
 The adapter does **not** perform its own input validation — that's the application service's job.
 
@@ -53,6 +54,10 @@ registry.register(myEndpoint);
 // Automatically available as MCP tool "my-endpoint"
 ```
 
+Object-valued endpoint outputs are exposed as MCP `outputSchema` and returned as
+`structuredContent`. Primitive and array outputs remain text-only because MCP
+structured output requires an object contract.
+
 ## Tool Naming
 
 Use lowercase names with hyphens or underscores. Dots are discouraged — some MCP clients handle them inconsistently. The `makeEndpoint()` function warns on non-conforming names.
@@ -69,4 +74,6 @@ npx @modelcontextprotocol/inspector stdio -- npx tsx src/server/mcp.ts
 
 ## Dynamic Tool Notifications
 
-When endpoints are added/removed at runtime via `registry.signalToolsChanged()`, the MCP adapter sends `notifications/tools/list_changed` to all connected sessions.
+When endpoints or enrichments change at runtime via `registry.signalToolsChanged()`,
+the MCP adapter rebuilds each session's enriched registrations and sends
+`notifications/tools/list_changed` to connected clients.

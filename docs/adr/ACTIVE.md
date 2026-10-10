@@ -1,6 +1,6 @@
 # Active Architecture Decisions
 
-Generated at 2026-03-22T11:24:47.548Z
+Generated at 2026-10-10T08:20:14.360Z
 
 | ID | Title | Status | Summary |
 | --- | --- | --- | --- |
@@ -14,3 +14,4 @@ Generated at 2026-03-22T11:24:47.548Z
 | ADR-0008 | ADR-0008: RPC-over-REST Design Pattern | accepted | Use RPC-over-REST with POST-only endpoints dispatched by name (POST /rpc/:name) rather than traditional RESTful resource modelling, optimising for transport parity with MCP tools. |
 | ADR-0009 | ADR-0009: CLI Flag and Parameter Separation | accepted | Use double dashes (--) for CLI flags and single dash (-) for endpoint parameters to avoid naming collisions between framework flags and user-defined endpoint input. |
 | ADR-0010 | ADR-0010: Flatten Discriminated Unions for MCP Tool Schemas | accepted | Flatten Zod discriminated unions into a single object schema when registering MCP tools, so agents see all parameters instead of an empty schema. |
+| ADR-0011 | ADR-0011: MCP Structured Output Contracts | accepted | Advertise object-compatible endpoint output schemas through MCP and return validated structuredContent alongside a JSON text fallback. |

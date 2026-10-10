@@ -23,8 +23,7 @@ import type { OpenAPIV3 } from 'openapi-types';
 import type { TransportPort } from '../../ports/transport.js';
 import type { EndpointRegistry } from '../../domain/registry.js';
 import type { LoggerPort } from '../../ports/logger.js';
-import { toRivetBenchError } from '../../domain/errors.js';
-import { flattenForMcp } from './flatten-for-mcp.js';
+import { createMcpToolRegistration, type McpToolRegistration } from './tool-registration.js';
 
 /**
  * OpenAPI path item describing the MCP Streamable HTTP endpoint.
@@ -177,52 +176,11 @@ export interface McpHandler {
 interface Session {
   server: McpServer;
   transport: StreamableHTTPServerTransport;
-}
-
-/**
- * Register every endpoint from the registry as an MCP tool on `mcp`.
- */
-function registerTools(mcp: McpServer, options: McpHandlerOptions): void {
-  const { transport, registry, logger } = options;
-
-  for (const endpoint of registry.list()) {
-    // ADR-0010: Flatten discriminated unions so MCP clients see all parameters.
-    // Cast needed: registerTool's generics cause TS2589 with ZodTypeAny return;
-    // validation still uses the original endpoint.input via transport.invoke.
-    const inputSchema = flattenForMcp(endpoint.input) as typeof endpoint.input;
-    mcp.registerTool(
-      endpoint.name,
-      {
-        description: endpoint.description || endpoint.summary,
-        inputSchema,
-      },
-      async (args: Record<string, unknown>) => {
-        try {
-          const result = await transport.invoke(endpoint.name, args);
-          return {
-            content: [
-              { type: 'text' as const, text: JSON.stringify(result.output, null, 2) },
-            ],
-          };
-        } catch (error) {
-          const rivetError = toRivetBenchError(error);
-          logger.error('MCP tool execution failed', {
-            tool: endpoint.name,
-            errorCode: rivetError.code,
-          });
-          return {
-            content: [
-              { type: 'text' as const, text: JSON.stringify(rivetError.toJSON(), null, 2) },
-            ],
-            isError: true,
-          };
-        }
-      },
-    );
-  }
+  tools: McpToolRegistration;
 }
 
 function createSession(options: McpHandlerOptions): Session {
+  const sessionId = crypto.randomUUID();
   const server = new McpServer(
     {
       name: options.application.name,
@@ -231,13 +189,18 @@ function createSession(options: McpHandlerOptions): Session {
     { capabilities: { tools: { listChanged: true } } },
   );
 
-  registerTools(server, options);
-
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
+  const tools = createMcpToolRegistration(server, {
+    transport: options.transport,
+    registry: options.registry,
+    logger: options.logger,
+    context: { transportType: 'mcp', sessionId },
   });
 
-  return { server, transport };
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => sessionId,
+  });
+
+  return { server, transport, tools };
 }
 
 // ---------------------------------------------------------------------------
@@ -274,11 +237,7 @@ export function createMcpHandler(options: McpHandlerOptions): McpHandler {
 
   // Forward registry tool-list changes to all active MCP sessions.
   const unsubscribe = options.registry.onToolsChanged(() => {
-    for (const { server } of sessions.values()) {
-      server.server.sendToolListChanged().catch(() => {
-        /* best-effort: session may have disconnected */
-      });
-    }
+    for (const session of sessions.values()) synchronizeTools(session, options.logger);
   });
 
   async function handleRequest(
@@ -333,4 +292,14 @@ export function createMcpHandler(options: McpHandlerOptions): McpHandler {
   }
 
   return { handleRequest, close };
+}
+
+function synchronizeTools(session: Session, logger: LoggerPort): void {
+  try {
+    session.tools.sync();
+  } catch (error) {
+    logger.error('Failed to synchronize MCP tools', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }

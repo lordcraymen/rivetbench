@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-22T11:24:47.548Z",
-  "total": 10,
+  "generatedAt": "2026-10-10T08:20:14.360Z",
+  "total": 11,
   "adrs": [
     {
       "id": "ADR-0001",
@@ -176,6 +176,24 @@
         "src/adapters/mcp/handler.ts"
       ],
       "path": "docs/adr/ADR-0010-discriminated-union-flattening-for-mcp.md"
+    },
+    {
+      "id": "ADR-0011",
+      "title": "ADR-0011: MCP Structured Output Contracts",
+      "status": "accepted",
+      "summary": "Advertise object-compatible endpoint output schemas through MCP and return validated structuredContent alongside a JSON text fallback.",
+      "date": "2026-10-10",
+      "tags": [
+        "mcp",
+        "schemas",
+        "structured-content",
+        "compatibility"
+      ],
+      "modules": [
+        "src/adapters/mcp/tool-registration.ts",
+        "src/adapters/mcp/flatten-for-mcp.ts"
+      ],
+      "path": "docs/adr/ADR-0011-mcp-structured-output-contracts.md"
     }
   ]
 }

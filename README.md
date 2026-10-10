@@ -140,6 +140,12 @@ const getUser = makeEndpoint<typeof Input, typeof Output, AppCtx>({
 registry.setContextFactory(() => ({ db: dbPool }));
 ```
 
+### MCP Structured Results
+
+Object-valued endpoint outputs are advertised as MCP `outputSchema` and returned
+as both native `structuredContent` and JSON text. Primitive and array outputs
+remain text-only.
+
 ### Dynamic Tool Notifications
 
 Signal connected clients when endpoint availability changes:

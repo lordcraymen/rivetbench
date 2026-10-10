@@ -22,6 +22,11 @@
  */
 import { z, type ZodTypeAny } from 'zod';
 
+type DiscriminatedUnionLike = ZodTypeAny & {
+  discriminator: string;
+  options: z.ZodObject<z.ZodRawShape>[];
+};
+
 /**
  * If `schema` is a `ZodDiscriminatedUnion`, return a flattened `z.object()`
  * suitable for MCP `inputSchema`.  All other schema types pass through unchanged.
@@ -38,10 +43,28 @@ import { z, type ZodTypeAny } from 'zod';
  * ```
  */
 export function flattenForMcp(schema: ZodTypeAny): ZodTypeAny {
-  if (schema instanceof z.ZodDiscriminatedUnion) {
+  if (isDiscriminatedUnion(schema)) {
     return flattenDiscriminatedUnion(schema);
   }
   return schema;
+}
+
+/**
+ * Convert a compatible endpoint schema into an MCP object schema.
+ *
+ * @param schema - Endpoint input or output schema.
+ * @returns An object-compatible schema, or `undefined` when MCP cannot
+ *          represent the endpoint contract as structured content.
+ *
+ * @example
+ * ```typescript
+ * const schema = objectSchemaForMcp(z.object({ answer: z.string() }));
+ * // schema is suitable for MCP inputSchema/outputSchema
+ * ```
+ */
+export function objectSchemaForMcp(schema: ZodTypeAny): ZodTypeAny | undefined {
+  const candidate = flattenForMcp(schema);
+  return hasObjectShape(candidate) ? candidate : undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,11 +80,11 @@ export function flattenForMcp(schema: ZodTypeAny): ZodTypeAny {
  * 3. Only the discriminator is in `required`.
  * 4. Shared fields (present in every variant) → `.optional()` (per ADR: only discriminator required).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function flattenDiscriminatedUnion(schema: z.ZodDiscriminatedUnion<string, any>): z.ZodObject<any> {
+function flattenDiscriminatedUnion(
+  schema: DiscriminatedUnionLike,
+): z.ZodObject<z.ZodRawShape> {
   const discriminator: string = schema.discriminator;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const options: z.ZodObject<any>[] = schema.options;
+  const options = schema.options;
 
   const discriminatorValues: string[] = [];
   /** field name → list of discriminator values where it appears */
@@ -115,8 +138,30 @@ function flattenDiscriminatedUnion(schema: z.ZodDiscriminatedUnion<string, any>)
 
 /** Unwrap one layer of `ZodOptional` so we can re-apply `.optional()` uniformly. */
 function unwrapOptional(schema: ZodTypeAny): ZodTypeAny {
-  if (schema instanceof z.ZodOptional) {
-    return schema.unwrap();
+  const candidate = schema as unknown as { unwrap?: () => ZodTypeAny };
+  if (
+    hasTypeName(schema, z.ZodFirstPartyTypeKind.ZodOptional) &&
+    typeof candidate.unwrap === 'function'
+  ) {
+    return candidate.unwrap();
   }
   return schema;
+}
+
+function isDiscriminatedUnion(
+  schema: ZodTypeAny,
+): schema is DiscriminatedUnionLike {
+  if (!hasTypeName(schema, z.ZodFirstPartyTypeKind.ZodDiscriminatedUnion)) return false;
+  const candidate = schema as unknown as { discriminator?: unknown; options?: unknown };
+  return typeof candidate.discriminator === 'string' && Array.isArray(candidate.options);
+}
+
+function hasObjectShape(schema: ZodTypeAny): boolean {
+  const candidate = schema as unknown as { shape?: unknown };
+  return candidate.shape !== undefined;
+}
+
+function hasTypeName(schema: ZodTypeAny, typeName: z.ZodFirstPartyTypeKind): boolean {
+  const candidate = schema as unknown as { _def?: { typeName?: unknown } };
+  return candidate._def?.typeName === typeName;
 }

@@ -26,6 +26,11 @@ Discriminated unions are idiomatic Zod for multi-operation endpoints (e.g. a `co
 
 Flatten `z.discriminatedUnion()` schemas into a single `z.object()` in `registerTools()` inside `src/adapters/mcp/handler.ts`, between reading `endpoint.input` and passing `inputSchema` to `mcp.registerTool()`.
 
+Schema-kind detection is structural. It uses Zod's `_def.typeName` metadata and
+guarded public fields rather than `instanceof`. Consumers can legitimately load
+a separate physical copy of Zod, in which case class identity differs even when
+both copies have the same version and schema semantics.
+
 ### Flattening rules
 
 1. **Extract the discriminator** (e.g. `kind`) and list all literal values as `z.enum()`.
@@ -88,6 +93,8 @@ The REST/OpenAPI path is unaffected — flattening only applies to the MCP adapt
 - Loss of variant-level precision — the flat schema cannot express "field X is required when kind=Y"; agents see variant-specific fields as optional. Mitigated by `.describe()` annotations and original-schema validation.
 - Potential field name collisions — if two variants share a field name with incompatible types, the flattened schema picks one. Rare in practice since discriminated unions typically use distinct field names per variant.
 - Maintenance cost — the flattening logic must handle Zod edge cases (nested unions, `.transform()`, `.pipe()`). Requires thorough unit tests.
+- Structural detection depends on stable Zod 3 schema metadata. Cross-installation
+  regression tests protect this boundary.
 
 # References
 

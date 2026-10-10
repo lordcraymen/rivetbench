@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance, LogController } from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import type { Logger as PinoLogger } from 'pino';
@@ -150,7 +150,7 @@ export const createRestServer = async ({
     loggerInstance: logger,
     genReqId: () => crypto.randomUUID(),
     requestIdHeader: 'x-request-id',
-    requestIdLogLabel: 'reqId',
+    logController: new LogController({ requestIdLogLabel: 'reqId' }),
   });
 
   // When no TransportPort is provided, build one from the application services.

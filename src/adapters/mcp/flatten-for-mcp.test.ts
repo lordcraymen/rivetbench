@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { flattenForMcp } from './flatten-for-mcp.js';
+import { z as foreignZod } from 'zod-foreign';
+import { flattenForMcp, objectSchemaForMcp } from './flatten-for-mcp.js';
 
 describe('flattenForMcp', () => {
   describe('non-discriminated-union schemas (pass-through)', () => {
@@ -24,6 +25,30 @@ describe('flattenForMcp', () => {
   });
 
   describe('discriminated union flattening', () => {
+    it('flattens a union created by a separate Zod installation', () => {
+      const schema = foreignZod.discriminatedUnion('kind', [
+        foreignZod.object({ kind: foreignZod.literal('create'), name: foreignZod.string() }),
+        foreignZod.object({ kind: foreignZod.literal('remove'), id: foreignZod.string() }),
+      ]);
+
+      const flat = flattenForMcp(schema);
+      const shape = (flat as z.ZodObject<z.ZodRawShape>).shape;
+
+      expect(Object.keys(shape).sort()).toEqual(['id', 'kind', 'name']);
+    });
+
+    it('unwraps optional fields created by a separate Zod installation', () => {
+      const schema = foreignZod.discriminatedUnion('kind', [
+        foreignZod.object({ kind: foreignZod.literal('a'), value: foreignZod.string().optional() }),
+        foreignZod.object({ kind: foreignZod.literal('b'), count: foreignZod.number() }),
+      ]);
+
+      const flat = flattenForMcp(schema) as z.ZodObject<z.ZodRawShape>;
+      const innerType = flat.shape.value._def.innerType;
+
+      expect(innerType).not.toBeInstanceOf(foreignZod.ZodOptional);
+    });
+
     it('flattens a basic two-variant union', () => {
       const schema = z.discriminatedUnion('kind', [
         z.object({ kind: z.literal('upsert_nodes'), nodes: z.array(z.string()) }),
@@ -178,6 +203,17 @@ describe('flattenForMcp', () => {
 
       // Invalid: bad discriminator value
       expect(flat.safeParse({ kind: 'c' }).success).toBe(false);
+    });
+  });
+
+  describe('MCP object schema compatibility', () => {
+    it('returns object schemas', () => {
+      const schema = z.object({ value: z.string() });
+      expect(objectSchemaForMcp(schema)).toBe(schema);
+    });
+
+    it('rejects primitive schemas', () => {
+      expect(objectSchemaForMcp(z.string())).toBeUndefined();
     });
   });
 });
