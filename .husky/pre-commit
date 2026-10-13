@@ -1,2 +1,5 @@
+for FILE in $(git diff --cached --name-only --diff-filter=ACMR); do
+  case "$FILE" in package.json|*/package.json|package-lock.json|*/package-lock.json|npm-shrinkwrap.json|*/npm-shrinkwrap.json|pnpm-lock.yaml|*/pnpm-lock.yaml|yarn.lock|*/yarn.lock) if git diff --cached -- "$FILE" | grep -Eq '^\+.*("file:|file:|"link": true|"resolved": "\.\.?/)'; then echo "✗ Local dependency path staged in $FILE."; exit 1; fi ;; esac
+done
 npx lint-staged
 npm run type-check
