@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { makeEndpoint } from './endpoint.js';
 
 describe('makeEndpoint', () => {

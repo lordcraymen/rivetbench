@@ -51,7 +51,7 @@ describe('core sub-export', () => {
 
   it('should allow creating a full endpoint via the sub-export', async () => {
     const { makeEndpoint, InMemoryEndpointRegistry } = await import('./core.js');
-    const { z } = await import('zod');
+    const { z } = await import('zod/v3');
 
     const ping = makeEndpoint({
       name: 'ping',

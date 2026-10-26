@@ -1,4 +1,4 @@
-import { z, ZodTypeAny } from 'zod';
+import { z, ZodTypeAny } from 'zod/v3';
 
 /**
  * Runtime configuration injected into every endpoint handler invocation.
@@ -175,4 +175,3 @@ export const makeEndpoint = <
   }
   return definition;
 };
-

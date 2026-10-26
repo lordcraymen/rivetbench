@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createTransportPort } from './create-transport-port.js';
 import { InMemoryEndpointRegistry } from '../domain/registry.js';
 import { makeEndpoint } from '../domain/endpoint.js';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { noopLoggerPort } from '../__test-helpers__/test-logger.js';
 
 describe('createTransportPort', () => {

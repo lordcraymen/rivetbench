@@ -20,7 +20,7 @@
  * // → z.object({ kind: z.enum(["a","b"]), x: z.string().optional(), y: z.number().optional() })
  * ```
  */
-import { z, type ZodTypeAny } from 'zod';
+import { z, type ZodTypeAny } from 'zod/v3';
 
 type DiscriminatedUnionLike = ZodTypeAny & {
   discriminator: string;

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { createRestServer } from '../adapters/fastify/server.js';
 import { loadConfig } from '../config/index.js';
 import { InMemoryEndpointRegistry } from '../domain/registry.js';

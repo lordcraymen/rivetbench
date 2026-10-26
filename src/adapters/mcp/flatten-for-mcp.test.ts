@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { z } from 'zod';
-import { z as foreignZod } from 'zod-foreign';
+import { z } from 'zod/v3';
+import { z as foreignZod } from 'zod-foreign/v3';
 import { flattenForMcp, objectSchemaForMcp } from './flatten-for-mcp.js';
 
 describe('flattenForMcp', () => {

@@ -4,7 +4,7 @@
  * @example
  * ```typescript
  * import { makeEndpoint, InMemoryEndpointRegistry, createRestServer, loadConfig } from '@lordcraymen/rivetbench';
- * import { z } from 'zod';
+ * import { z } from 'zod/v3';
  *
  * const greet = makeEndpoint({
  *   name: 'greet',

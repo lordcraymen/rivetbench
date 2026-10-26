@@ -38,7 +38,7 @@ Requires **Node.js >= 20**.
 ### Define an endpoint
 
 ```ts
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { makeEndpoint } from '@lordcraymen/rivetbench';
 
 export const echo = makeEndpoint({

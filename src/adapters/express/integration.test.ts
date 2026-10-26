@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import express from 'express';
 import type { Server } from 'node:http';
 import { InMemoryEndpointRegistry } from '../../domain/registry.js';

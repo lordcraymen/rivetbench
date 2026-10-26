@@ -1,5 +1,5 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v3';
 import type { LoggerPort } from '../../ports/logger.js';
 import { isRivetBenchError, ValidationError, toRivetBenchError } from '../../domain/errors.js';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { buildOpenApiDocument } from '../../application/openapi.js';
 import { makeEndpoint } from '../../domain/endpoint.js';
 

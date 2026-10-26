@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { InMemoryEndpointRegistry } from './registry.js';
 import { makeEndpoint } from './endpoint.js';
 

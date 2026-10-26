@@ -22,7 +22,7 @@
 
 import http, { type Server } from 'node:http';
 import { describe, bench, beforeAll, afterAll, expect } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import express from 'express';
 import Fastify from 'fastify';
 import Koa from 'koa';
@@ -260,4 +260,3 @@ describe(`endpoint invoke — ${CONCURRENCY} concurrent requests per iteration`,
     await loadBurst(tKoa);
   });
 });
-

@@ -1,5 +1,5 @@
 import { Given, When, Then } from '@cucumber/cucumber';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { RivetBenchWorld } from './world.js';
 import { createRestServer } from '../../src/adapters/fastify/server.js';
 import { loadConfig } from '../../src/config/index.js';

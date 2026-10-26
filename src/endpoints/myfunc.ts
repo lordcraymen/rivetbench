@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { makeEndpoint } from '../domain/endpoint.js';
 
 const MyFuncInput = z.object({
